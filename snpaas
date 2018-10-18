@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Docker image with all the binaries
+DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools}"
+DOCKER_CMD_ARGS="--rm"
+# If these environment variables are defined in the environment, they will be exported automatically to the container
+BOSH_ENVVARS="BOSH_CLIENT BOSH_CLIENT_SECRET BOSH_ENVIRONMENT BOSH_CA_CERT"
+CREDHUB_ENVVARS="CREDHUB_SERVER CREDHUB_CLIENT CREDHUB_SECRET CREDHUB_CA_CERT"
+GCP_ENVVARS="GCP_PROJECT GCP_ZONE GCP_REGION"
+
+
+if [ -x "$(command -v docker)" ]
+then
+  for var in ${BOSH_ENVVARS} ${CREDHUB_ENVVARS} ${CREDHUB_ENVVARS}
+  do
+    [ -z "${var}" ] && DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
+  done
+  exec docker run ${DOCKER_CMD_ARGS} -v $(pwd):/data -it platformengineering/snpaas-tools "${@}"
+else
+  # . .envrc
+  # exec ${CMD}
+  echo "Please install docker in order to use this program!"
+  exit 1
+fi
+
