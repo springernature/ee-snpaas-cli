@@ -1,5 +1,8 @@
 #!/bin/bash
-
+#
+# This is a shell version of the Python client
+# It offers a similiar functionality
+#
 # Docker image with all the binaries
 DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools}"
 DOCKER_CMD_ARGS="--rm"
@@ -15,11 +18,10 @@ then
   do
     [ -z "${var}" ] && DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
   done
-  exec docker run ${DOCKER_CMD_ARGS} -v $(pwd):/data -it platformengineering/snpaas-tools "${@}"
+  exec docker run ${DOCKER_CMD_ARGS} -v $(pwd):/data -it "${DOCKER_IMAGE}" "${@}"
 else
   # . .envrc
   # exec ${CMD}
   echo "Please install docker in order to use this program!"
   exit 1
 fi
-
