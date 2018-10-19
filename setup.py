@@ -10,8 +10,6 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
-from pip.download import PipSession
-from pip.req import parse_requirements
 import re
 
 
@@ -38,13 +36,6 @@ def find_readme(f="README.md"):
     return long_description
 
 
-def find_requirements(f='requirements.txt'):
-    # parse_requirements() returns generator of pip.req.InstallRequirement objects
-    reqs = parse_requirements("requirements.txt", session=PipSession())
-    install_reqs = [str(ir.req) for ir in reqs]
-    return install_reqs
-
-
 setup(
     name="snpaas-cli",
     url="https://github.com/springernature/ee-snpaas-cli",
@@ -57,13 +48,10 @@ setup(
     license='MIT',
     packages=find_packages(exclude=['docs', 'tests']),
     download_url="https://github.com/springernature/ee-snpaas-cli/releases/tag/v" + find_version('snpaas_cli/snpaas.py'),
-
     # Include additional files into the package
     include_package_data=True,
-
     # additional files need to be installed into
     data_files=[],
-
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
@@ -81,10 +69,6 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3'
     ],
-
-    # Dependent packages (distributions)
-    install_requires=find_requirements(),
-
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
