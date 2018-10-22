@@ -21,7 +21,7 @@ usage() {
     echo
     cat "/Readme.md"
     for e in $(env | awk -F'=' '/^SNPAAS_/{ print $1 }')
-    do 
+    do
         echo "$(echo $e | awk '{ sub(/SNPAAS_/,"",$1); sub(/_VERSION/,"",$1);  print "  "$1}'):  ${!e}"
     done
     echo
@@ -32,11 +32,14 @@ case ${command} in
     usage
     exit 0
   ;;
-  -m|-p|deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets)
-    exec bash manage-deployment.sh ${command} "${@}"
+  deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets)
+    exec manage-deployment.sh ${command} ${@}
+  ;;
+  -m|-p)
+    exec manage-deployment.sh ${command} ${@}
   ;;
   *)
-    exec ${command} "${@}"
+    exec ${command} ${@}
   ;;
 esac
 
