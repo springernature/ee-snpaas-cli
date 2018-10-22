@@ -161,7 +161,7 @@ bosh_interpolate() {
         while IFS=  read -r -d $'\0' line
         do
             bosh_operations+=("${line}")
-        done < <(find ${manifest_operations_path} -xtype f \( -name "*.yml" -o -name "*.yaml" \) -print0 | sort -z)
+        done < <(find -L ${manifest_operations_path} -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | sort -z)
         # check if there are files there
         if [ ${#bosh_operations[@]} == 0 ]
         then
@@ -188,7 +188,7 @@ bosh_interpolate() {
         while IFS=  read -r -d $'\0' line
         do
             bosh_varsfiles+=("${line}")
-        done < <(find ${manifest_vars_path} -xtype f \( -name "*.yml" -o -name "*.yaml" \) -print0 | sort -z)
+        done < <(find -L ${manifest_vars_path} -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | sort -z)
     fi
     # List of varsfiles with the proper path
     cmd="${cmd} ${bosh_varsfiles[@]/#/--vars-file }"
@@ -335,7 +335,7 @@ bosh_deployment_manage() {
     rvalue=$?
     [ ${rvalue} != 0 ] && return ${rvalue}
 
-    base=$(find "${path}" -maxdepth 1  -xtype f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
+    base=$(find -L "${path}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
     if [ "${action}" == "destroy" ]
     then
         bosh_destroy_manifest "${deployment}" ${args}
