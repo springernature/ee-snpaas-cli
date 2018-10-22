@@ -16,7 +16,7 @@ if [ -x "$(command -v docker)" ]
 then
   for var in ${BOSH_ENVVARS} ${CREDHUB_ENVVARS} ${CREDHUB_ENVVARS}
   do
-    [ -z "${var}" ] && DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
+    [ -z "${var}" ] || DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
   done
   exec docker run ${DOCKER_CMD_ARGS} -v $(pwd):/data -it "${DOCKER_IMAGE}" "${@}"
 else
