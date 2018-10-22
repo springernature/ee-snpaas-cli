@@ -11,8 +11,13 @@ import re
 import os
 import argparse
 
+import select
+import termios
+import tty
+import pty
+
 __program__ = "snpaas"
-__version__ = "0.1.2"
+__version__ = "0.1.4"
 __author__ = "EE"
 __year__ = "2018"
 __email__ = "<engineering-enablement@springernature.com>"
@@ -93,6 +98,34 @@ def docker_check():
         raise ValueError("Please check your docker environment!: %s" % e)
 
 
+def docker_run_interactive2(image, volumes=[], extra_args=[], envs=[], initial_regex=None):
+    command=['docker', 'run', '--rm', '-it']
+    intial_regex_skipped=True if initial_regex else False
+    for volume in volumes:
+        command.append('-v')
+        paths = volume.split(':')
+        if len(paths) == 2:
+            command.append("%s:%s" % (os.path.abspath(paths[0]), paths[1]))
+        elif len(paths) == 3:
+            command.append("%s:%s:%s" % (os.path.abspath(paths[0]), paths[1], paths[2]))
+        else:
+            raise ValueError("Only volumes with format <host-path>:<container-path> are supported")
+    for e in envs:
+        if e in os.environ:
+            command = command + ['--env', e]
+    command = command + [str(image)] + extra_args
+    #print(command)
+    proc = subprocess.Popen(command, bufsize=1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while proc.returncode is None:
+        outputline = proc.stdout.readline()
+        if intial_regex_skipped:
+            intial_regex_skipped = re.match(initial_regex, outputline) != None
+        else:
+            sys.stdout.write(outputline.decode("utf-8"))
+        proc.poll()
+    return proc.returncode
+
+
 def docker_run_interactive(image, volumes=[], extra_args=[], envs=[], initial_regex=None):
     command=['docker', 'run', '--rm', '-it']
     intial_regex_skipped=True if initial_regex else False
@@ -110,14 +143,26 @@ def docker_run_interactive(image, volumes=[], extra_args=[], envs=[], initial_re
             command = command + ['--env', e]
     command = command + [str(image)] + extra_args
     #print(command)
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
-    while proc.returncode is None:
-        outputline = proc.stdout.readline()
-        if intial_regex_skipped:
-            intial_regex_skipped = re.match(initial_regex, outputline) != None
-        else:
-            sys.stdout.write(outputline.decode("utf-8"))
-        proc.poll()
+    # save original tty setting then set it to raw mode
+    old_tty = termios.tcgetattr(sys.stdin)
+    tty.setraw(sys.stdin.fileno())
+    # open pseudo-terminal to interact with subprocess
+    master_fd, slave_fd = pty.openpty()
+    proc = subprocess.Popen(command,  preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, universal_newlines=True)
+    while proc.poll() is None:
+        r, w, e = select.select([sys.stdin, master_fd], [], [], 1)
+        if sys.stdin in r:
+            d = os.read(sys.stdin.fileno(), 10240)
+            os.write(master_fd, d)
+        elif master_fd in r:
+            o = os.read(master_fd, 10240)
+            outputline = o.decode('utf-8')
+            if intial_regex_skipped:
+                intial_regex_skipped = re.match(initial_regex, outputline) != None
+            else:
+                os.write(sys.stdout.fileno(), outputline.encode("utf-8"))
+    # restore tty settings back
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_tty)
     return proc.returncode
 
 
