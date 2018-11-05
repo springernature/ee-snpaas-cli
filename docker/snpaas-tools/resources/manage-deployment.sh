@@ -145,7 +145,7 @@ bosh_interpolate() {
     local operations=()
     local rvalue
     local output
-    local cmd="${BOSH_CLI} interpolate"
+    local cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} interpolate"
 
     echo_log "INFO" "Generating interpolated manifests from operations ${manifest_operations_path} ..."
     if [ ! -d ${manifest_operations_path} ]
@@ -352,6 +352,7 @@ bosh_deployment_manage() {
     # if manifest has director uuid, check it!
     if [ "${action}" == "deploy" ]
     then
+        [ -r "${secrets}" ] || secrets=""
         [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
         bosh_deploy_manifest "${deployment}" "${manifest}" "${secrets}" "${force}" ${args}
         rvalue=$?
@@ -365,7 +366,7 @@ bosh_destroy_manifest() {
     shift
     local args="${@}"
 
-    local cmd="${BOSH_CLI} -n -d ${deployment} delete-deployment --force"
+    local cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -n -d ${deployment} delete-deployment --force"
     local output
     local rvalue
 
@@ -401,9 +402,9 @@ bosh_deploy_manifest() {
 
     if [ -n "${force}" ] && [ "${force}" == "1" ]
     then
-        cmd="${BOSH_CLI} -n -d ${deployment} deploy ${manifest}"
+        cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -n -d ${deployment} deploy ${manifest}"
     else
-        cmd="${BOSH_CLI} -d ${deployment} deploy --no-redact ${manifest}"
+        cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -d ${deployment} deploy --no-redact ${manifest}"
     fi
     [ -n "${secrets}" ] && cmd="${cmd} --vars-store ${secrets}"
     echo_log "INFO" "Deploying '${manifest}' as deployment ${deployment} ..."
