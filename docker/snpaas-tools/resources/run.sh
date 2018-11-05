@@ -33,10 +33,10 @@ case ${command} in
     exit 0
   ;;
   deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets)
-    exec manage-deployment.sh ${command} ${@}
+    exec -- manage-deployment.sh ${command} ${@}
   ;;
   -m|-p)
-    exec manage-deployment.sh ${command} ${@}
+    exec -- manage-deployment.sh ${command} ${@}
   ;;
   *)
     exec ${command} ${@}
