@@ -145,7 +145,7 @@ bosh_interpolate() {
     local operations=()
     local rvalue
     local output
-    local cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} interpolate"
+    local cmd="${BOSH_CLI} interpolate"
 
     echo_log "INFO" "Generating interpolated manifests from operations ${manifest_operations_path} ..."
     if [ ! -d ${manifest_operations_path} ]
