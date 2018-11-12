@@ -13,7 +13,9 @@ export PATH=$PATH:/usr/local/bin:/data/bin:bin
 # .envrc file in the volume
 if [ -r "/data/.envrc" ]
 then
-    . /data/.envrc
+    pushd /data
+        . .envrc
+    popd
 else
     echo "# No '.envrc' file found in the root repo!"
 fi
