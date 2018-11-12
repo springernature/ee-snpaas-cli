@@ -17,6 +17,7 @@ DEPLOYMENT_VARS="${DEPLOYMENT_VARS:-variables}"
 DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config}"
 DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config}"
 DEPLOYMENT_NAME_VAR="${DEPLOYMENT_NAME_VAR:-deployment_name}"
+DEPLOYMENT_PREPARE_SCRIPT="${DEPLOYMENT_PREPARE_SCRIPT:-prepare.sh}"
 
 # You can predefine these vars
 DEPLOYMENTS_PATH='.'
@@ -53,6 +54,9 @@ useful to work with director in other scripts or in the command line by
 sourcing this file.
 
 You can use your BOSH_CLIENT env variables if you set BOSH_USER_NAME to '' (empty).
+
+If there is a script '$DEPLOYMENT_PREPARE_SCRIPT' next to the base manifest,
+it will be execute before the interpolation.
 
 EOF
 }
@@ -146,7 +150,22 @@ bosh_interpolate() {
     local rvalue
     local output
     local cmd="${BOSH_CLI} interpolate"
+    local prepare="${DEPLOYMENT_PREPARE_SCRIPT}"
 
+
+    if [ -n "${base_manifest}" ]
+    then
+        prepare="$(dirname "${base_manifest}")/${prepare}"
+    else
+        prepare="${manifest_operations_path}/${prepare}"
+    fi
+    if [ -x "${prepare}" ]
+    then
+        echo_log "RUN" "${prepare}"
+        (
+            ${prepare}
+        ) > >(tee -a ${PROGRAM_LOG}) 2>&1)
+    fi
     echo_log "INFO" "Generating interpolated manifests from operations ${manifest_operations_path} ..."
     if [ ! -d ${manifest_operations_path} ]
     then
@@ -177,6 +196,7 @@ bosh_interpolate() {
         then
             operations=("${bosh_operations[@]:1}")
             cmd="${cmd} ${bosh_operations[0]} ${operations[@]/#/-o }"
+            base_manifest="${bosh_operations[0]}"
         else
             operations=("${bosh_operations[@]}")
             cmd="${cmd} ${base_manifest} ${operations[@]/#/-o }"
