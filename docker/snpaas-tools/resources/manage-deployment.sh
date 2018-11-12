@@ -18,6 +18,7 @@ DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config}"
 DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config}"
 DEPLOYMENT_NAME_VAR="${DEPLOYMENT_NAME_VAR:-deployment_name}"
 DEPLOYMENT_PREPARE_SCRIPT="${DEPLOYMENT_PREPARE_SCRIPT:-prepare.sh}"
+DEPLOYMENT_FINISH_SCRIPT="${DEPLOYMENT_FINISH_SCRIPT:-finish.sh}"
 
 # You can predefine these vars
 DEPLOYMENTS_PATH='.'
@@ -56,7 +57,8 @@ sourcing this file.
 You can use your BOSH_CLIENT env variables if you set BOSH_USER_NAME to '' (empty).
 
 If there is a script '$DEPLOYMENT_PREPARE_SCRIPT' next to the base manifest,
-it will be execute before the interpolation.
+it will be launched before the action. If there is a script '$DEPLOYMENT_FINISH_SCRIPT'
+it will be run after the action. Both scripts receive the action as first parameter.
 
 EOF
 }
@@ -150,22 +152,7 @@ bosh_interpolate() {
     local rvalue
     local output
     local cmd="${BOSH_CLI} interpolate"
-    local prepare="${DEPLOYMENT_PREPARE_SCRIPT}"
 
-
-    if [ -n "${base_manifest}" ]
-    then
-        prepare="$(dirname "${base_manifest}")/${prepare}"
-    else
-        prepare="${manifest_operations_path}/${prepare}"
-    fi
-    if [ -x "${prepare}" ]
-    then
-        echo_log "RUN" "${prepare}"
-        (
-            ${prepare}
-        ) > >(tee -a ${PROGRAM_LOG}) 2>&1)
-    fi
     echo_log "INFO" "Generating interpolated manifests from operations ${manifest_operations_path} ..."
     if [ ! -d ${manifest_operations_path} ]
     then
@@ -312,6 +299,31 @@ bosh_update_runtime_or_cloud_config() {
 }
 
 
+run_script() {
+    local program="${1}"
+    shift
+
+    if [ -x "${program}" ]
+    then
+        echo_log "INFO" "Executing '${program}' ..."
+        echo_log "RUN" "${program}"
+        (
+            ${program} $@ > >(tee -a ${PROGRAM_LOG}) 2>&1
+        ) &
+        wait $!
+        rvalue=$?
+        if [ ${rvalue} != 0 ]
+        then
+            echo_log "ERROR" "Running script!"
+        fi
+        return ${rvalue}
+    else
+        echo_log "No '${program}' found. Ignoring!"
+    fi
+    return 0
+}
+
+
 # create-env, destroy-env interpolate bosh directors environments
 # path=.
 bosh_deployment_manage() {
@@ -328,9 +340,11 @@ bosh_deployment_manage() {
     local secrets="${path}/${DEPLOYMENT_CREDS}"
     local operations="${path}/${DEPLOYMENT_OPERATIONS}"
     local varsdir="${path}/${DEPLOYMENT_VARS}"
+    local prepare="${path}/${DEPLOYMENT_PREPARE_SCRIPT}"
+    local finish="${path}/${DEPLOYMENT_FINISH_SCRIPT}"
     local director_name
     local director_uuid
-    local base
+    local base=""
 
     director_name=$(bosh_director_name 2>&1)
     rvalue=$?
@@ -347,36 +361,48 @@ bosh_deployment_manage() {
     director_uuid=$(bosh_uuid)
     echo_log "INFO" "Managing Bosh Director: ${director_name}  uuid=${director_uuid}"
 
-    # Check if cloud-config and runtime-config need to be updated
-    bosh_update_runtime_or_cloud_config "runtime-config" "${path}" "${force}"
-    rvalue=$?
-    [ ${rvalue} != 0 ] && return ${rvalue}
-    bosh_update_runtime_or_cloud_config "cloud-config" "${path}" "${force}"
+    # Run prepare script
+    run_script "${prepare}" "${action}"
     rvalue=$?
     [ ${rvalue} != 0 ] && return ${rvalue}
 
-    base=$(find -L "${path}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
     if [ "${action}" == "destroy" ]
     then
         bosh_destroy_manifest "${deployment}" ${args}
         rvalue=$?
-        return ${rvalue}
-    fi
-    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
-    rvalue=$?
-    if [ ${rvalue} != 0 ]
-    then
-        echo_log "ERROR" "Cannot generate manifest for ${path}"
-        return ${rvalue}
-    fi
-    # if manifest has director uuid, check it!
-    if [ "${action}" == "deploy" ]
-    then
-        [ -r "${secrets}" ] || secrets=""
-        [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
-        bosh_deploy_manifest "${deployment}" "${manifest}" "${secrets}" "${force}" ${args}
+    else
+        # Check if cloud-config and runtime-config need to be updated
+        bosh_update_runtime_or_cloud_config "runtime-config" "${path}" "${force}"
         rvalue=$?
+        [ ${rvalue} != 0 ] && return ${rvalue}
+        bosh_update_runtime_or_cloud_config "cloud-config" "${path}" "${force}"
+        rvalue=$?
+        [ ${rvalue} != 0 ] && return ${rvalue}
+
+        # If there is a operations folder, the base should be there, otherwise take
+        # the first yml manifest (lexical order) as base
+        base=""
+        if [ ! -d "${operations}" ]
+        then
+            base=$(find -L "${path}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
+        fi
+        bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
+        rvalue=$?
+        if [ ${rvalue} != 0 ]
+        then
+            echo_log "ERROR" "Cannot generate manifest for ${path}"
+        elif [ "${action}" == "deploy" ]
+        then
+            # if manifest has director uuid, check it!
+            [ -r "${secrets}" ] || secrets=""
+            [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
+            bosh_deploy_manifest "${deployment}" "${manifest}" "${secrets}" "${force}" ${args}
+            rvalue=$?
+        fi
     fi
+    # Run finish script
+    run_script "${finish}" "${action}" "${rvalue}"
+    #rvalue=$?
     return ${rvalue}
 }
 

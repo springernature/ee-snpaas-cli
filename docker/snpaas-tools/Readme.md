@@ -48,11 +48,15 @@ Subcommands:
 # Folder structure:
 
 <deployment-folder>
-├── <boshrelease-git-submodule-folder>
-├── base.yml -> <boshrelease-git-submodule-folder>/manifest/logstash.yml
+├── <boshrelease1-git-submodule-folder>
+├── <boshrelease2-git-submodule-folder>
+├── ...
+├── prepare.sh
+├── finish.sh
 ├── operations
-│   ├── 10-operation.yml -> ../<boshrelease-git-submodule-folder>/manifest/operations/operation.yml
-│   ├── 20-operation2.yml -> ../<boshrelease-git-submodule-folder>/manifest/operations/operation2.yml
+│   ├── 00-base-manifest.yml -> ../<boshrelease1-git-submodule-folder>/manifest/base.yml
+│   ├── 10-operation.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation.yml
+│   ├── 20-operation2.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation2.yml
 │   ├── 99-springer-nature-operation-custom.yml
 ├── secrets.yml
 ├── cloud-config
@@ -60,11 +64,34 @@ Subcommands:
 └── variables
     ├── variables-custom1.yml
     ├── variables-custom1.yml
-    └── variables-provided.yml -> ../<boshrelease-git-submodule-folder>/manifest/vars.yml
+    └── variables-provided.yml -> ../<boshrelease1-git-submodule-folder>/manifest/vars.yml
 
 
-Credhub secrets have to be type 'value' and they will be imported/exported inside a
-'secrets.yml' file, which, in case it exits, the script will read.
+Secrets processed by this program are type 'value' and they will be imported/exported
+from Credhub from/to a 'secrets.yml' file. When interpolate or deploy, the program
+will check if there is a secrets file, if so, it will be used as store for generated
+secrets automatically. If you want to force the script to generate and store
+secrets there, just create an empty file: "touch secrets.yml" otherwise Bosh will
+use Credhub. So make sure you do not have a 'secrets.yml' if you want to store all
+credentials in Credhub. To sum up:
+
+* Use a 'secrets.yml' file to export/import credentials from Credhub, then delete
+  it to avoid confusion between Credhub and 'secrets.yml'.
+* If there is no Credhub, create an empty 'secrets.yml' file. All credentials will
+  be generated and stored there.
+* Do not use 'secrets.yml' in any other situation.
+
+You can add a couple of scripts "prepare.sh" and "finish.sh" which will be executed
+automatically before and after the action (destroy, deploy or interpolate). Both
+will receive the action as first argument, and the "finish.sh" script will also get
+the exit code from the action (the finish script is always executed, even if the 
+action fails).
+
+The operations file is not required if you have a simple manifest which does not need
+operations files. In this situation, just copy the manifest to the deployment folder
+and make sure there is no operations folder there. The first yaml file (in lexical
+order) will be taken as manifest and deployed, so make sure you call the manifest
+file properly (secrets.yml is always ignored, so do not worry about it).
 
 
 # Usage examples
@@ -72,8 +99,9 @@ Credhub secrets have to be type 'value' and they will be imported/exported insid
 Given a deployment folder called 'app-logging' with this structure:
 
 app-logging
-├── logstash.yml -> cf-logging-boshrelease/manifest/logstash.yml
+├── prepare.sh
 ├── operations
+│   ├── 00-base.yml -> ../cf-logging-boshrelease/manifest/logstash.yml
 │   ├── 20-cf-apps-es.yml -> ../cf-logging-boshrelease/manifest/operations/pipelines/cf-apps-es-throttling.yml
 │   ├── 25-add-statsd-conf.yml -> ../cf-logging-boshrelease/manifest/operations/add-statsd-conf.yml
 │   ├── 30-add-throttle-param.yml -> ../cf-logging-boshrelease/manifest/operations/add-throttle-param.yml
