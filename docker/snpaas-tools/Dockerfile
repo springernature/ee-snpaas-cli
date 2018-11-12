@@ -2,8 +2,8 @@ FROM alpine:3.8
 # docker build . -t snpaas-tools
 # docker run -it -v $(pwd)/data snpaas-tools help
 
-# Version of this image (arg comes from git commit)
-ARG VERSION=1
+# Version of this image
+ARG VERSION=1.1
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
@@ -24,6 +24,8 @@ ARG GUID=1000
 ARG TIMEZONE=Europe/Amsterdam
 ARG DATADIR=/data
 
+LABEL org.label-schema.docker.schema-version="1.0"
+LABEL org.label-schema.vendor="Springer Nature EE"
 LABEL org.label-schema.description="SNPaaS tools image based on alpine"
 LABEL org.label-schema.name="snpaas-tools"
 LABEL org.label-schema.version="${VERSION}"
@@ -35,6 +37,7 @@ LABEL architecture="amd64"
 
 ENV LANG=en_US.utf8
 ENV LC_ALL=C.UTF-8
+ENV VERSION="${VERSION}"
 
 ENV SNPAAS_GCLOUD_SDK_VERSION=$SNPAAS_GCLOUD_SDK_VERSION
 ENV SNPAAS_BOSH_CLI_VERSION=$SNPAAS_BOSH_CLI_VERSION

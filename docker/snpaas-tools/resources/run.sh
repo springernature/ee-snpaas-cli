@@ -5,17 +5,29 @@ shopt -s nullglob
 command=$1
 shift
 
-export PATH=$PATH:/usr/local/bin:/data/bin
+export PATH=$PATH:/usr/local/bin:/data/bin:bin
 [ -n "${GCP_ZONE}" ] && gcloud config set compute/zone ${GCP_ZONE} 2>&1 | awk '{ print "# "$0}'
 [ -n "${GCP_REGION}" ] && gcloud config set compute/region ${GCP_REGION} 2>&1 | awk '{ print "# "$0}'
 [ -n "${GCP_PROJECT}" ] && gcloud config set project ${GCP_PROJECT} 2>&1 | awk '{ print "# "$0}'
+
+# .envrc file in the volume
+if [ -r "/data/.envrc" ]
+then
+    . /data/.envrc
+else
+    echo "# No '.envrc' file found in the root repo!"
+fi
+
+# .envrc file in the current path : working dir
 if [ -r ".envrc" ]
 then
     . .envrc
 else
-    echo "# No '.envrc' file found!"
+    echo "# No '.envrc' file found in current folder!"
 fi
 
+echo "# Running snpaas cli version ${VERSION}"
+echo
 
 usage() {
     echo
@@ -32,11 +44,8 @@ case ${command} in
     usage
     exit 0
   ;;
-  deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets)
-    exec -- manage-deployment.sh ${command} ${@}
-  ;;
-  -m|-p)
-    exec -- manage-deployment.sh ${command} ${@}
+  deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets|-m|-p)
+    exec manage-deployment.sh ${command} ${@}
   ;;
   *)
     exec ${command} ${@}
