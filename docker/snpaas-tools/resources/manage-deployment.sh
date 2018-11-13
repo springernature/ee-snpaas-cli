@@ -300,15 +300,18 @@ bosh_update_runtime_or_cloud_config() {
 
 
 run_script() {
-    local program="${1}"
-    shift
+    local name="${1}"
+    local path="${2}"
+    local program="${3}"
+    shift 3
 
-    if [ -x "${program}" ]
+    if [ -x "${path}/${program}" ]
     then
-        echo_log "INFO" "Executing '${program}' ..."
-        echo_log "RUN" "${program}"
+        echo_log "INFO" "Executing '${name}' ..."
+        echo_log "RUN" "${path}/${program}"
         (
-            ${program} $@ > >(tee -a ${PROGRAM_LOG}) 2>&1
+            cd ${path}
+            exec ./${program} $@ > >(tee -a ${PROGRAM_LOG}) 2>&1
         ) &
         wait $!
         rvalue=$?
@@ -318,7 +321,7 @@ run_script() {
         fi
         return ${rvalue}
     else
-        echo_log "No '${program}' found. Ignoring!"
+        echo_log "No ${name} in '${path}/${program}' found. Ignoring!"
     fi
     return 0
 }
@@ -340,8 +343,8 @@ bosh_deployment_manage() {
     local secrets="${path}/${DEPLOYMENT_CREDS}"
     local operations="${path}/${DEPLOYMENT_OPERATIONS}"
     local varsdir="${path}/${DEPLOYMENT_VARS}"
-    local prepare="${path}/${DEPLOYMENT_PREPARE_SCRIPT}"
-    local finish="${path}/${DEPLOYMENT_FINISH_SCRIPT}"
+    local prepare="${DEPLOYMENT_PREPARE_SCRIPT}"
+    local finish="${DEPLOYMENT_FINISH_SCRIPT}"
     local director_name
     local director_uuid
     local base=""
@@ -362,7 +365,7 @@ bosh_deployment_manage() {
     echo_log "INFO" "Managing Bosh Director: ${director_name}  uuid=${director_uuid}"
 
     # Run prepare script
-    run_script "${prepare}" "${action}"
+    run_script "prepare" "${path}" "${prepare}" "${action}"
     rvalue=$?
     [ ${rvalue} != 0 ] && return ${rvalue}
 
@@ -401,7 +404,7 @@ bosh_deployment_manage() {
         fi
     fi
     # Run finish script
-    run_script "${finish}" "${action}" "${rvalue}"
+    run_script "finish" "${path}" "${finish}" "${action}" "${rvalue}"
     #rvalue=$?
     return ${rvalue}
 }
