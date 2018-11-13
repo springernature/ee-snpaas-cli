@@ -126,6 +126,46 @@ def docker_run_interactive2(image, volumes=[], extra_args=[], envs=[], initial_r
     return proc.returncode
 
 
+def docker_run_interactive3(image, volumes=[], extra_args=[], envs=[], initial_regex=None):
+    command=['docker', 'run', '--rm', '-it']
+    intial_regex_skipped=True if initial_regex else False
+    for volume in volumes:
+        command.append('-v')
+        paths = volume.split(':')
+        if len(paths) == 2:
+            command.append("%s:%s" % (os.path.abspath(paths[0]), paths[1]))
+        elif len(paths) == 3:
+            command.append("%s:%s:%s" % (os.path.abspath(paths[0]), paths[1], paths[2]))
+        else:
+            raise ValueError("Only volumes with format <host-path>:<container-path> are supported")
+    for e in envs:
+        if e in os.environ:
+            command = command + ['--env', e]
+    command = command + [str(image)] + extra_args
+    #print(command)
+    # save original tty setting then set it to raw mode
+    old_tty = termios.tcgetattr(sys.stdin)
+    tty.setraw(sys.stdin.fileno())
+    # open pseudo-terminal to interact with subprocess
+    master_fd, slave_fd = pty.openpty()
+    proc = subprocess.Popen(command, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, universal_newlines=True)
+    while proc.poll() is None:
+        r, w, e = select.select([sys.stdin, master_fd], [], [], 1)
+        if sys.stdin in r:
+            d = os.read(sys.stdin.fileno(), 10240)
+            os.write(master_fd, d)
+        elif master_fd in r:
+            o = os.read(master_fd, 10240)
+            outputline = o.decode('utf-8')
+            if intial_regex_skipped:
+                intial_regex_skipped = re.match(initial_regex, outputline) != None
+            else:
+                os.write(sys.stdout.fileno(), outputline.encode("utf-8"))
+    # restore tty settings back
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_tty)
+    return proc.returncode
+
+
 def docker_run_interactive(image, volumes=[], extra_args=[], envs=[], initial_regex=None):
     command=['docker', 'run', '--rm', '-it']
     intial_regex_skipped=True if initial_regex else False
@@ -148,7 +188,7 @@ def docker_run_interactive(image, volumes=[], extra_args=[], envs=[], initial_re
     tty.setraw(sys.stdin.fileno())
     # open pseudo-terminal to interact with subprocess
     master_fd, slave_fd = pty.openpty()
-    proc = subprocess.Popen(command,  preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, universal_newlines=True)
+    proc = subprocess.Popen(command, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, universal_newlines=False)
     while proc.poll() is None:
         r, w, e = select.select([sys.stdin, master_fd], [], [], 1)
         if sys.stdin in r:
@@ -156,11 +196,9 @@ def docker_run_interactive(image, volumes=[], extra_args=[], envs=[], initial_re
             os.write(master_fd, d)
         elif master_fd in r:
             o = os.read(master_fd, 10240)
-            outputline = o.decode('utf-8')
-            if intial_regex_skipped:
-                intial_regex_skipped = re.match(initial_regex, outputline) != None
-            else:
-                os.write(sys.stdout.fileno(), outputline.encode("utf-8"))
+            if o:
+                print("---- %s ----" % o)
+                os.write(sys.stdout.fileno(), o)
     # restore tty settings back
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_tty)
     return proc.returncode
