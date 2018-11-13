@@ -6,6 +6,7 @@
 # Docker image with all the binaries
 DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools:latest}"
 DOCKER_CMD_ARGS="--rm --user $(id -u):$(id -g)"
+PREPARE_SCRIPT="prepare.sh"
 
 # If these environment variables are defined in the environment, they will be exported automatically to the container
 BOSH_ENVVARS="BOSH_CLIENT BOSH_CLIENT_SECRET BOSH_ENVIRONMENT BOSH_CA_CERT"
@@ -26,6 +27,18 @@ then
   current_path="$(pwd)"
   relative_path="${current_path#"$BASE_FOLDER"}"
   DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} --workdir /data${relative_path}"
+  # If there is a prepare.sh script in the base folder of the repo, execute it
+  if [ -x "${BASE_FOLDER}/${PREPARE_SCRIPT}" ]
+  then
+      (
+          cd ${BASE_FOLDER}
+          ./${PREPARE_SCRIPT} 2>&1 | awk '{ print "# "$0}'
+          exit ${PIPESTATUS[0]}
+      ) &
+      wait $!
+      rvalue=$?
+      [ "${rvalue}" == "0" ] || exit ${rvalue}
+  fi
 else
   # If this is not a git repo, just import the current path as volume
   BASE_FOLDER="$(pwd)"
@@ -34,6 +47,7 @@ fi
 if [ -n "${SSH_AUTH_SOCK}" ]
 then
   # SSH agent socket in order to get working with github
+  # THIS ONLY WORKS ON LINUX
   DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(readlink ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 else
   # Export all user home as ro to get ssh keys
