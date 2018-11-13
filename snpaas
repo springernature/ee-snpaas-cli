@@ -34,7 +34,7 @@ fi
 if [ -n "${SSH_AUTH_SOCK}" ]
 then
   # SSH agent socket in order to get working with github
-  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(readlink -f ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
+  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(readlink ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 else
   # Export all user home as ro to get ssh keys
   DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home:ro"
