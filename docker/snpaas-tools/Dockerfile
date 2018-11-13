@@ -19,6 +19,8 @@ ARG SNPAAS_CERTSTRAP_VERSION=1.1.1
 ARG SNPAAS_SPIFF_VERSION=1.0.8
 ARG SNPAAS_GCLOUD_SDK_VERSION=220.0.0
 
+ARG SNPAAS_USER=snpaas
+ARG SNPAAS_HOME=/home
 ARG UID=1000
 ARG GUID=1000
 ARG TIMEZONE=Europe/Amsterdam
@@ -38,6 +40,7 @@ LABEL architecture="amd64"
 ENV LANG=en_US.utf8
 ENV LC_ALL=C.UTF-8
 ENV VERSION="${VERSION}"
+ENV HOME="${SNPAAS_HOME}"
 
 ENV SNPAAS_GCLOUD_SDK_VERSION=$SNPAAS_GCLOUD_SDK_VERSION
 ENV SNPAAS_BOSH_CLI_VERSION=$SNPAAS_BOSH_CLI_VERSION
@@ -51,8 +54,11 @@ ENV SNPAAS_BBR_VERSION=$SNPAAS_BBR_VERSION
 ENV SNPAAS_CERTSTRAP_VERSION=$SNPAAS_CERTSTRAP_VERSION
 ENV SNPAAS_SPIFF_VERSION=$SNPAAS_SPIFF_VERSION
 
-RUN set -xe                                                                 && \
-    apk -U upgrade                                                          && \
+RUN set -xe                                                                                            && \
+    addgroup -g "${GUID}" "${SNPAAS_USER}"                                                             && \
+    adduser -h "${SNPAAS_HOME}" -D -G "${SNPAAS_USER}" -s /sbin/nologin -u "${UID}" "${SNPAAS_USER}"   && \
+    chown ${SNPAAS_USER}:${SNPAAS_USER} ${SNPAAS_HOME}                                                 && \
+    apk -U upgrade                                                                                     && \
     # Installing Alpine packages. Some of these are required because of dependencies with the binaries
     apk add --no-cache \
         tzdata \
@@ -102,15 +108,11 @@ RUN set -xe                                                                 && \
     wget "https://github.com/cloudfoundry-incubator/spiff/releases/download/v${SNPAAS_SPIFF_VERSION}/spiff_linux_amd64.zip" -nv -O /tmp/spiff.zip && unzip -q /tmp/spiff.zip -d /usr/local/bin
 
 
-ENV PATH $PATH:/usr/local/bin:/opt/google-cloud-sdk/bin
-
 RUN set -xe                                                                 && \
     mkdir -p /opt                                                           && \
-    wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${SNPAAS_GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz -nv -O - | tar -zx -C /opt                                                              &&\
-    gcloud config set core/disable_usage_reporting true                     && \
-    gcloud config set component_manager/disable_update_check true           && \
-    gcloud config set metrics/environment github_docker_image
+    wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${SNPAAS_GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz -nv -O - | tar -zx -C /opt
 
+ENV PATH $PATH:/usr/local/bin:/opt/google-cloud-sdk/bin
 COPY Readme.md /
 COPY resources/*.sh /usr/local/bin/
 RUN set -xe                                                                 && \
@@ -119,10 +121,19 @@ RUN set -xe                                                                 && \
     rm -rf /tmp/* /var/tmp/*                                                && \
     mkdir -p ${DATADIR}
 
-VOLUME "${DATADIR}"
+VOLUME [ "${DATADIR}" "${SNPAAS_HOME}" ]
 WORKDIR "${DATADIR}"
-ENTRYPOINT ["/bin/bash", "/run.sh"]
+USER "${SNPAAS_USER}"
 
+RUN set -xe                                                                 && \
+    gcloud config set core/disable_usage_reporting true                     && \
+    gcloud config set component_manager/disable_update_check true           && \
+    gcloud config set metrics/environment github_docker_image               && \
+    mkdir -p ${SNPAAS_HOME}/.ssh                                            && \
+    chmod 700 ${SNPAAS_HOME}/.ssh
+
+# Main command
+ENTRYPOINT ["/bin/bash", "/run.sh"]
 # Define default command
 CMD ["help"]
 
