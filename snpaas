@@ -4,24 +4,55 @@
 # It offers a similiar functionality
 #
 # Docker image with all the binaries
-DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools}"
-DOCKER_CMD_ARGS="--rm"
+DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools:latest}"
+DOCKER_CMD_ARGS="--rm --user $(id -u):$(id -g)"
+
 # If these environment variables are defined in the environment, they will be exported automatically to the container
 BOSH_ENVVARS="BOSH_CLIENT BOSH_CLIENT_SECRET BOSH_ENVIRONMENT BOSH_CA_CERT"
 CREDHUB_ENVVARS="CREDHUB_SERVER CREDHUB_CLIENT CREDHUB_SECRET CREDHUB_CA_CERT"
 GCP_ENVVARS="GCP_PROJECT GCP_ZONE GCP_REGION"
+SYSTEM_ENVVARS="USER GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_SSH_COMMAND"
 
+# You can define extra envvars to pass to the container just with this env var
+EXTRA_ENVVARS="${EXTRA_ENVVARS:-}"
+export GIT_SSH_COMMAND=${GIT_SSH_COMMAND:-"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"}
+
+###
+
+if BASE_FOLDER="$(git rev-parse --show-toplevel 2>/dev/null)"
+then
+  # If the command is being executed in a git repo, the volume will be the entire
+  # git repo, and the workdir will be set to the current path
+  current_path="$(pwd)"
+  relative_path="${current_path#"$BASE_FOLDER"}"
+  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} --workdir /data${relative_path}"
+else
+  # If this is not a git repo, just import the current path as volume
+  BASE_FOLDER="$(pwd)"
+fi
+
+if [ -n "${SSH_AUTH_SOCK}" ]
+then
+  # SSH agent socket in order to get working with github
+  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(readlink -f ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
+else
+  # Export all user home as ro to get ssh keys
+  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home:ro"
+fi
 
 if [ -x "$(command -v docker)" ]
 then
-  for var in ${BOSH_ENVVARS} ${CREDHUB_ENVVARS} ${CREDHUB_ENVVARS}
+  docker pull "${DOCKER_IMAGE}" 2>&1 | awk '{ print "# "$0}'
+  echo "#"
+  for var in ${BOSH_ENVVARS} ${CREDHUB_ENVVARS} ${CREDHUB_ENVVARS} ${SYSTEM_ENVVARS} ${EXTRA_ENVVARS}
   do
     [ -z "${var}" ] || DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
   done
-  exec docker run ${DOCKER_CMD_ARGS} -v $(pwd):/data -it "${DOCKER_IMAGE}" "${@}"
+  exec docker run ${DOCKER_CMD_ARGS} -v ${BASE_FOLDER}:/data -it "${DOCKER_IMAGE}" "${@}"
 else
   # . .envrc
   # exec ${CMD}
   echo "Please install docker in order to use this program!"
   exit 1
 fi
+
