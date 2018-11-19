@@ -5,7 +5,7 @@
 #
 # Docker image with all the binaries
 DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools:latest}"
-DOCKER_CMD_ARGS="--rm --user $(id -u):$(id -g)"
+DOCKER_CMD_ARGS="--rm"
 PREPARE_SCRIPT="prepare.sh"
 
 # If these environment variables are defined in the environment, they will be exported automatically to the container
@@ -51,7 +51,7 @@ then
   DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(readlink ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 else
   # Export all user home as ro to get ssh keys
-  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home:ro"
+  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home:ro --user $(id -u):$(id -g)"
 fi
 
 if [ -x "$(command -v docker)" ]
@@ -69,4 +69,3 @@ else
   echo "Please install docker in order to use this program!"
   exit 1
 fi
-
