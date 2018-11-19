@@ -22,13 +22,16 @@ else
     echo "# No '.envrc' file found in the root repo!"
 fi
 
-# .envrc file in the current path : working dir
-if [ -r ".envrc" ]
+if  [ "$(pwd)" != "/data" ]
 then
-    . .envrc
-    echo "# Done loading .envrc"
-else
-    echo "# No '.envrc' file found in current folder!"
+    # .envrc file in the current path : working dir
+    if [ -r ".envrc" ]
+    then
+        . .envrc
+        echo "# Done loading .envrc"
+    else
+        echo "# No '.envrc' file found in current folder!"
+    fi
 fi
 
 echo "# Running snpaas cli version ${VERSION}"
