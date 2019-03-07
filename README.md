@@ -56,11 +56,13 @@ The script `manage-deployment.sh` parses all the folder structure and runs the c
 
 # Usage
 
-You can install it by running `setup.py`:
+Download the bash script and make it executable:
+
 ```
 $ wget https://raw.githubusercontent.com/springernature/ee-snpaas-cli/master/snpaas -O snpaas && chmod a+x snpaas
 ```
 
+Make sure to put it into a location included in your `$PATH`.
 Once it is installed, type `snpaas`
 
 ```
