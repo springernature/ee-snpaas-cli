@@ -219,7 +219,7 @@ app-logging
 
 * To deploy or update the deployment called 'app-logging', execute: 'deploy app-logging'.
   If you do not want to answer 'y/n' question when bosh runs, just use '-f' option:
-  'deploy app-logging -f'
+  'deploy app-logging -f'. Execute 'snpaas deploy app-logging' from the parent directory containing the 'app-logging' deployment folder, not from within the 'app-logging' deployment folder itself (always execute from one level up).
 * To list secrets of the deployment from Credhub: 'list-secrets app-logging'
 * Exporting the secrets of the deployment from Credhub to file 'app-logging/secrets.yml'
   is done with: 'export-secrets app-logging'. Only credentials type value are supported.
