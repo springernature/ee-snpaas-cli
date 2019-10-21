@@ -1,9 +1,14 @@
-FROM alpine:3.8
+#FROM alpine:3.10
+FROM debian:10.1-slim
+
 # docker build . -t snpaas-tools
 # docker run -it -v $(pwd)/data snpaas-tools help
+# Do not worry: ARB, LABEL and ENV do not produce new layers!
+
 
 # Version of this image
-ARG VERSION=1.1
+# ARG VERSION=1.2
+ARG VERSION=2.0
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
@@ -17,14 +22,15 @@ ARG SNPAAS_FLY_VERSION=3.14.1
 ARG SNPAAS_BBR_VERSION=1.2.2
 ARG SNPAAS_CERTSTRAP_VERSION=1.1.1
 ARG SNPAAS_SPIFF_VERSION=1.0.8
-ARG SNPAAS_GCLOUD_SDK_VERSION=220.0.0
+ARG SNPAAS_GCLOUD_SDK_VERSION=267.0.0
 
-ARG SNPAAS_USER=snpaas
-ARG SNPAAS_HOME=/home
+ARG USER=snpaas
+ARG HOME=/home/snpaas
 ARG UID=1000
 ARG GUID=1000
 ARG TIMEZONE=Europe/Amsterdam
 ARG DATADIR=/data
+ARG OPTDIR=/opt
 
 LABEL org.label-schema.docker.schema-version="1.0"
 LABEL org.label-schema.vendor="Springer Nature EE"
@@ -39,8 +45,12 @@ LABEL architecture="amd64"
 
 ENV LANG=en_US.utf8
 ENV LC_ALL=C.UTF-8
-ENV VERSION="${VERSION}"
-ENV HOME="${SNPAAS_HOME}"
+ENV HOME="${HOME}"
+ENV SNPAAS_VERSION="${VERSION}"
+ENV SNPAAS_USER="${USER}"
+ENV SNPAAS_HOME="${HOME}"
+ENV SNPAAS_DATADIR="${DATADIR}"
+ENV SNPAAS_CF6_PLUGINS="${OPTDIR}"
 
 ENV SNPAAS_GCLOUD_SDK_VERSION=$SNPAAS_GCLOUD_SDK_VERSION
 ENV SNPAAS_BOSH_CLI_VERSION=$SNPAAS_BOSH_CLI_VERSION
@@ -54,25 +64,25 @@ ENV SNPAAS_BBR_VERSION=$SNPAAS_BBR_VERSION
 ENV SNPAAS_CERTSTRAP_VERSION=$SNPAAS_CERTSTRAP_VERSION
 ENV SNPAAS_SPIFF_VERSION=$SNPAAS_SPIFF_VERSION
 
-RUN set -xe                                                                                            && \
-    addgroup -g "${GUID}" "${SNPAAS_USER}"                                                             && \
-    adduser -h "${SNPAAS_HOME}" -D -G "${SNPAAS_USER}" -s /sbin/nologin -u "${UID}" "${SNPAAS_USER}"   && \
-    chown ${SNPAAS_USER}:${SNPAAS_USER} ${SNPAAS_HOME}                                                 && \
-    apk -U upgrade                                                                                     && \
-    # Installing Alpine packages. Some of these are required because of dependencies with the binaries
-    apk add --no-cache \
+RUN set -xe                                                                 && \
+    groupadd --gid "${GUID}" "${USER}"                                      && \
+    useradd --no-log-init --create-home  --home-dir "${HOME}" \
+            --gid "${GUID}" \
+            --shell /bin/bash \
+            --uid "${UID}" "${USER}"                                        && \
+    apt-get update                                                          && \
+    # Installing packages. Some of these are required because of 
+    # dependencies with the binaries
+    apt-get install --no-install-recommends -qq -y \
         tzdata \
         bash \
         curl \
         zip \
         unzip \
-        xmlsec \
-        yaml \
-        libc6-compat \
-        tzdata \
+        xmlsec1 \
         libxml2 \
-        libxslt \
-        readline \
+        libxslt1.1 \
+        libreadline7 \
         openssl \
         ca-certificates \
         openssh-client \
@@ -83,19 +93,24 @@ RUN set -xe                                                                     
         mariadb-client \
         fping \
         python3 \
-        py-crcmod \
+        python3-crcmod \
+        python3-yaml \
+        yamllint \
         git \
+        dnsutils \
         wget \
         gnupg \
+        pwgen \
                                                                             && \
     # Timezone
     cp "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime                     && \
     echo "${TIMEZONE}" > /etc/timezone                                      && \
     ln -s /lib /lib64                                                       && \
     # clean up
-    rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/* ~/.cache
+    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* /var/cache/distfiles/* ~/.cache
 
 RUN set -xe                                                                 && \
+    mkdir -p /opt                                                           && \
     wget "https://cli.run.pivotal.io/stable?release=linux64-binary&version=${SNPAAS_CF_CLI_VERSION}" -nv -O - | tar -zx -C /usr/local/bin                                                                                      && \
     wget "https://github.com/geofffranks/spruce/releases/download/v${SNPAAS_SPRUCE_VERSION}/spruce-linux-amd64" -nv -O /usr/local/bin/spruce                                                                                   && \
     wget "https://github.com/stedolan/jq/releases/download/jq-${SNPAAS_JQ_VERSION}/jq-linux64" -nv -O /usr/local/bin/jq                                                                                                        && \
@@ -105,32 +120,47 @@ RUN set -xe                                                                 && \
     wget "https://github.com/square/certstrap/releases/download/v${SNPAAS_CERTSTRAP_VERSION}/certstrap-v${SNPAAS_CERTSTRAP_VERSION}-linux-amd64" -nv -O /usr/local/bin/certstrap                                                      && \
     wget "https://github.com/cloudfoundry-incubator/bosh-backup-and-restore/releases/download/v${SNPAAS_BBR_VERSION}/bbr-${SNPAAS_BBR_VERSION}.tar" -nv -O - | tar -x -C /tmp releases/bbr && mv /tmp/releases/bbr /usr/local/bin/bbr && \
     wget "https://releases.hashicorp.com/terraform/${SNPAAS_TERRAFORM_VERSION}/terraform_${SNPAAS_TERRAFORM_VERSION}_linux_amd64.zip" -nv -O /tmp/terraform.zip && unzip -q /tmp/terraform.zip -d /usr/local/bin                      && \
-    wget "https://github.com/cloudfoundry-incubator/spiff/releases/download/v${SNPAAS_SPIFF_VERSION}/spiff_linux_amd64.zip" -nv -O /tmp/spiff.zip && unzip -q /tmp/spiff.zip -d /usr/local/bin
+    wget "https://github.com/cloudfoundry-incubator/spiff/releases/download/v${SNPAAS_SPIFF_VERSION}/spiff_linux_amd64.zip" -nv -O /tmp/spiff.zip && unzip -q /tmp/spiff.zip -d /usr/local/bin                                  && \
+    wget "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${SNPAAS_GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz" -nv -O - | tar -zx -C /opt
 
-
-RUN set -xe                                                                 && \
-    mkdir -p /opt                                                           && \
-    wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${SNPAAS_GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz -nv -O - | tar -zx -C /opt
-
-ENV PATH $PATH:/usr/local/bin:/opt/google-cloud-sdk/bin
 COPY Readme.md /
 COPY resources/*.sh /usr/local/bin/
+
+ENV PATH $PATH:/usr/local/bin:/opt/google-cloud-sdk/bin
+ENV CF_PLUGIN_HOME $SNPAAS_CF6_PLUGINS/cfv6
+
 RUN set -xe                                                                 && \
     chmod a+x /usr/local/bin/*                                              && \
     ln -s /usr/local/bin/run.sh /run.sh                                     && \
     rm -rf /tmp/* /var/tmp/*                                                && \
-    mkdir -p ${DATADIR}
-
-VOLUME [ "${DATADIR}" "${SNPAAS_HOME}" ]
-WORKDIR "${DATADIR}"
-USER "${SNPAAS_USER}"
-
-RUN set -xe                                                                 && \
+    mkdir -p ${HOME}/.ssh                                                   && \
+    chmod 700 ${HOME}/.ssh                                                  && \
+    # Setting up gcloud defaults
     gcloud config set core/disable_usage_reporting true                     && \
     gcloud config set component_manager/disable_update_check true           && \
     gcloud config set metrics/environment github_docker_image               && \
-    mkdir -p ${SNPAAS_HOME}/.ssh                                            && \
-    chmod 700 ${SNPAAS_HOME}/.ssh
+    # Installing cf plugins
+    cf install-plugin -f -r CF-Community "top"                              && \
+    cf install-plugin -f -r CF-Community "cf-rolling-restart"               && \
+    cf install-plugin -f -r CF-Community "log-stream"                       && \
+    cf install-plugin -f -r CF-Community "report-memory-usage"              && \
+    cf install-plugin -f -r CF-Community "report-disk-usage"                && \
+    cf install-plugin -f -r CF-Community "app-autoscaler-plugin"            && \
+    cf install-plugin -f -r CF-Community "log-cache"                        && \
+    cf install-plugin -f -r CF-Community "drains"                           && \
+    cf install-plugin -f -r CF-Community "report-users"                     && \
+    cf install-plugin -f -r CF-Community "mysql-plugin"                     && \
+    cf install-plugin -f -r CF-Community "deploy"                           && \
+    cf install-plugin -f -r CF-Community "route-lookup"                     && \
+    cf install-plugin -f -r CF-Community "Usage Report"                     && \
+    cf install-plugin -f -r CF-Community "cf-download"                      && \
+    cf install-plugin -f -r CF-Community "docker-usage"                     && \
+    cf install-plugin -f -r CF-Community "Buildpack Management"             && \
+    cf install-plugin -f -r CF-Community "Statistics"                       && \
+    chown -R ${USER}:${USER} ${HOME} $SNPAAS_CF6_PLUGINS
+
+
+VOLUME "${DATADIR}" "${HOME}"
 
 # Main command
 ENTRYPOINT ["/bin/bash", "/run.sh"]
