@@ -11,6 +11,7 @@ PREPARE_SCRIPT="prepare.sh"
 # If these environment variables are defined in the environment, they will be exported automatically to the container
 BOSH_ENVVARS="BOSH_CLIENT BOSH_CLIENT_SECRET BOSH_ENVIRONMENT BOSH_CA_CERT"
 CREDHUB_ENVVARS="CREDHUB_SERVER CREDHUB_CLIENT CREDHUB_SECRET CREDHUB_CA_CERT"
+CF_ENVVARS="CF_API CF_USER CF_PASSWORD CF_ORG CF_SPACE"
 GCP_ENVVARS="GCP_PROJECT GCP_ZONE GCP_REGION"
 SYSTEM_ENVVARS="USER GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_SSH_COMMAND"
 
@@ -56,9 +57,9 @@ fi
 
 if [ -x "$(command -v docker)" ]
 then
-  docker pull "${DOCKER_IMAGE}" 2>&1 | awk '{ print "# "$0}'
+  docker pull "${DOCKER_IMAGE}" 2>&1 | awk '{ print "# "$0}' || true
   echo "#"
-  for var in ${BOSH_ENVVARS} ${CREDHUB_ENVVARS} ${CREDHUB_ENVVARS} ${SYSTEM_ENVVARS} ${EXTRA_ENVVARS}
+  for var in ${BOSH_ENVVARS} ${CREDHUB_ENVVARS} ${CREDHUB_ENVVARS} ${CF_ENVVARS} ${SYSTEM_ENVVARS} ${EXTRA_ENVVARS}
   do
     [ -z "${var}" ] || DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
   done
