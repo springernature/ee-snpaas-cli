@@ -31,7 +31,7 @@ Usage:
     $PROGRAM [options] <subcommand> <deployment-folder> [subcommand-options]
 
 Bosh-client manifest manager. By default it looks for a folder with the same
-name as <deployment-folder>, reads the operations files, varialbes and
+name as <deployment-folder>, reads the operations files, variables and
 executes <subcommand>.
 
 Options:
@@ -44,8 +44,8 @@ Subcommands:
     interpolate     Create the manifest for an environment
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
-    cloud-config    Apply cloud-config (To be finished)
-    runtime-config  Apply runtime-config (To be finished)
+    cloud-config    Apply cloud-config
+    runtime-config  Apply runtime-config
     import-secrets  Set secrets in Credhub from <deployment-folder>/$DEPLOYMENT_CREDS file
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
@@ -321,7 +321,7 @@ run_script() {
         fi
         return ${rvalue}
     else
-        echo_log "No ${name} in '${path}/${program}' found. Ignoring!"
+        echo_log "No '${path}/${program}' found. Ignoring!"
     fi
     return 0
 }
@@ -451,9 +451,9 @@ bosh_deploy_manifest() {
 
     if [ -n "${force}" ] && [ "${force}" == "1" ]
     then
-        cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -n -d ${deployment} deploy ${manifest}"
+        cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -n -d ${deployment} deploy --fix ${manifest}"
     else
-        cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -d ${deployment} deploy --no-redact ${manifest}"
+        cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -d ${deployment} deploy --fix --no-redact ${manifest}"
     fi
     [ -n "${secrets}" ] && cmd="${cmd} --vars-store ${secrets}"
     echo_log "INFO" "Deploying '${manifest}' as deployment ${deployment} ..."
@@ -796,19 +796,19 @@ then
             usage
             exit 0
             ;;
-        list-secrets)
+        list-secrets|credhub-list-secrets)
             credhub_manage "${DEPLOYMENT_FOLDER}" "list"
             RVALUE=$?
             ;;
-        export-secrets)
+        export-secrets|credhub-export-secrets)
             credhub_manage "${DEPLOYMENT_FOLDER}" "export"
             RVALUE=$?
             ;;
-        import-secrets)
+        import-secrets|credhub-import-secrets)
             credhub_manage "${DEPLOYMENT_FOLDER}" "import"
             RVALUE=$?
             ;;
-        deploy)
+        deploy|bosh-deploy)
             # Process ask option
             while getopts ":f" optsub
             do
@@ -825,12 +825,12 @@ then
             bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "deploy" "${MANIFEST}" "${FORCE}"
             RVALUE=$?
             ;;
-        interpolate|int)
+        interpolate|int|bohs-int|bosh-interpolate)
             bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "int" "${MANIFEST}"
             RVALUE=$?
             [ ${STDOUT} == 1 ] && cat "${MANIFEST}"
             ;;
-        destroy)
+        destroy|bosh-destroy|delete|bosh-delete)
             # Process force option
             while getopts ":f" optsub
             do
