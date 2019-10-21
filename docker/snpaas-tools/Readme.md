@@ -10,7 +10,7 @@ For more information go to: https://github.com/springernature/ee-snpaas-cli
 You can execute them directly. In the current folder you can define a '.envrc' file
 with all environment variables you want to be setup in the running container.
 If you do not have a '.envrc' file but you have the following environment variables
-in your environment, then Bosh-cli and Credhub-cli will automatically log-in: 
+in your environment, then Bosh-cli, Credhub-cli and CF-cli will automatically log-in: 
 
   "BOSH_CLIENT"
   "BOSH_CLIENT_SECRET"
@@ -23,6 +23,11 @@ in your environment, then Bosh-cli and Credhub-cli will automatically log-in:
   "GCP_PROJECT"
   "GCP_ZONE"
   "GCP_REGION"
+  "CF_USER"
+  "CF_PASSWORD"
+  "CF_API"
+  "CF_ORG"
+  "CF_SPACE"
 
 Then you are ready to manage to manage deployments, with this subcommands and options:
 
@@ -35,6 +40,9 @@ Options:
 
 Subcommands:
     help            Shows usage help
+
+Bosh/deployment subcommands
+
     interpolate     Create the manifest for an environment
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
@@ -44,6 +52,17 @@ Subcommands:
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
 
+CloudFoundry subcommands
+
+Please define CF_ environment variables!
+
+    cf-top                  top like command for Cloudfoundry
+    cf-disk                 Full disk usage report
+    cf-mem                  Memory usage report
+    cf-users                List users and roles
+    cf-app-stats <app>      Graphical application stats
+    cf-mysql <service>      Connect with a mysql database to perform commands
+    cf-route-lookup <route> CF route lookup
 
 # Folder structure:
 
