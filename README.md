@@ -66,36 +66,41 @@ Make sure to put it into a location included in your `$PATH`.
 Once it is installed, type `snpaas`
 
 ```
-$ snpaas
+$ snpaas 
 # latest: Pulling from platformengineering/snpaas-tools
-# Digest: sha256:623fc1c30738d0170f5a7ff5cbf1a6561ab183f0426c13ab62d7bc61f52b4b2d
+# Digest: sha256:98e43521714bbb536bb8d8b95f9bd7515cab8d9d61838ba2b723386465b99187
 # Status: Image is up to date for platformengineering/snpaas-tools:latest
+# docker.io/platformengineering/snpaas-tools:latest
 #
-# > Targeting Bosh director 10.80.192.6 as admin user
-# Using environment '10.80.192.6' as client 'admin'
+# Running snpaas cli version 2.0
+# Workdir root: /data
+# Loading repository .envrc
+# > Targeting Bosh director 10.80.202.6 as admin user
+# Using environment '10.80.202.6' as client 'admin'
 # 
-# Name      live-bosh-env  
-# UUID      4a49742f-95eb-43bd-815c-f9077d6411d7  
-# Version   265.2.0 (00000000)  
+# Name      test-bosh-env  
+# UUID      a25d8a26-ec15-40fb-a6da-8e43b269bd11  
+# Version   270.1.1 (00000000)  
 # CPI       google_cpi  
 # Features  compiled_package_cache: disabled  
 #           config_server: enabled  
-#           dns: disabled  
+#           local_dns: enabled  
+#           power_dns: disabled  
 #           snapshots: disabled  
 # User      admin  
 # 
 # Succeeded
-# > Targeting Credhub 10.80.192.6:8844 as credhub-admin user
-# Setting the target url: https://10.80.192.6:8844
+# > Targeting Credhub 10.80.202.6:8844 as credhub-admin user
+# Setting the target url: https://10.80.202.6:8844
 # Login Successful
-# > Defining gcloud config for project sn-paas region europe-west4 on zone europe-west4-a ...
+# > Defining gcloud config for project sn-paas-test region europe-west4 on zone europe-west4-a ...
 # Updated property [compute/zone].
 # Updated property [compute/region].
 # Updated property [core/project].
-# Done loading MAIN .envrc
-# No '.envrc' file found in current folder!
-# Running snpaas cli version 1.1
+#
+# DONE LOADING .envrc
 
+# No '.envrc' file found in current folder!
 
 # Docker image: platformengineering/snpaas-tools
 
@@ -109,7 +114,7 @@ For more information go to: https://github.com/springernature/ee-snpaas-cli
 You can execute them directly. In the current folder you can define a '.envrc' file
 with all environment variables you want to be setup in the running container.
 If you do not have a '.envrc' file but you have the following environment variables
-in your environment, then Bosh-cli and Credhub-cli will automatically log-in: 
+in your environment, then Bosh-cli, Credhub-cli and CF-cli will automatically log-in: 
 
   "BOSH_CLIENT"
   "BOSH_CLIENT_SECRET"
@@ -122,6 +127,11 @@ in your environment, then Bosh-cli and Credhub-cli will automatically log-in:
   "GCP_PROJECT"
   "GCP_ZONE"
   "GCP_REGION"
+  "CF_USER"
+  "CF_PASSWORD"
+  "CF_API"
+  "CF_ORG"
+  "CF_SPACE"
 
 Then you are ready to manage to manage deployments, with this subcommands and options:
 
@@ -134,6 +144,9 @@ Options:
 
 Subcommands:
     help            Shows usage help
+
+Bosh/deployment subcommands
+
     interpolate     Create the manifest for an environment
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
@@ -143,6 +156,17 @@ Subcommands:
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
 
+CloudFoundry subcommands
+
+Please define CF_ environment variables!
+
+    cf-top                  top like command for Cloudfoundry
+    cf-disk                 Full disk usage report
+    cf-mem                  Memory usage report
+    cf-users                List users and roles
+    cf-app-stats <app>      Graphical application stats
+    cf-mysql <service>      Connect with a mysql database to perform commands
+    cf-route-lookup <route> CF route lookup
 
 # Folder structure:
 
@@ -219,9 +243,7 @@ app-logging
 
 * To deploy or update the deployment called 'app-logging', execute: 'deploy app-logging'.
   If you do not want to answer 'y/n' question when bosh runs, just use '-f' option:
-  'deploy app-logging -f'. Execute 'snpaas deploy app-logging' from the parent directory
-  containing the 'app-logging' deployment folder, not from within the 'app-logging' 
-  deployment folder itself (always execute commands from the directory one level up).
+  'deploy app-logging -f'
 * To list secrets of the deployment from Credhub: 'list-secrets app-logging'
 * Exporting the secrets of the deployment from Credhub to file 'app-logging/secrets.yml'
   is done with: 'export-secrets app-logging'. Only credentials type value are supported.
@@ -266,17 +288,22 @@ just copy the blue commands and execute them step by step.
 Additionally you can directly execute all the following programs installed, just
 by typing then as argument.
 
-  SPIFF:  1.0.8
-  CREDHUB:  1.7.7
-  GCLOUD_SDK:  220.0.0
-  CF_CLI:  6.40.0
-  BOSH_CLI:  5.2.1
-  CERTSTRAP:  1.1.1
-  JQ:  1.5
   BBR:  1.2.2
-  SPRUCE:  1.18.0
-  TERRAFORM:  0.11.8
+  CERTSTRAP:  1.1.1
+  CF6_PLUGINS:  /opt
+  CF_CLI:  6.40.0
   FLY:  3.14.1
+  HOME:  /home/snpaas
+  VERSION:  2.0
+  GCLOUD_SDK:  267.0.0
+  USER:  snpaas
+  SPIFF:  1.0.8
+  BOSH_CLI:  5.2.1
+  CREDHUB:  1.7.7
+  DATADIR:  /data
+  TERRAFORM:  0.11.8
+  JQ:  1.5
+  SPRUCE:  1.18.0
 
 ```
 
