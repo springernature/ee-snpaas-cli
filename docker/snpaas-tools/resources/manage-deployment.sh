@@ -476,12 +476,14 @@ bosh_deploy_manifest() {
 
 bosh_upload_stemcell() {
     local version="${1}"
-    local os=${2:-"ubuntu-trusty"}
+    local os=${2:-"ubuntu-xenial"}
+    local sha="${3}"
 
     local rvalue
     local stemcell
     local cpi
     local director_name
+    local cmd
 
     director_name=$(bosh_director_name 2>&1)
     rvalue=$?
@@ -492,23 +494,25 @@ bosh_upload_stemcell() {
     fi
     cpi=$(bosh_cpi_platform)
     echo_log "INFO" "Uploading ${os} version ${version} for ${cpi} to Bosh Director ..."
-    case $2 in
-    "gcp")
+    case "${cpi}" in
+    gcp|google)
         stemcell="https://s3.amazonaws.com/bosh-core-stemcells/google/bosh-stemcell-${version}-google-kvm-${os}-go_agent.tgz"
         ;;
-    "vsphere")
+    vsphere)
         stemcell="https://s3.amazonaws.com/bosh-core-stemcells/vsphere/bosh-stemcell-${version}-vsphere-esxi-${os}-go_agent.tgz"
         ;;
-    "openstack")
+    openstack)
         stemcell="https://s3.amazonaws.com/bosh-core-stemcells/openstack/bosh-stemcell-${version}-openstack-kvm-${os}-go_agent.tgz"
         ;;
-     "aws")
+    aws)
         stemcell="https://s3.amazonaws.com/bosh-aws-light-stemcells/light-bosh-stemcell-${version}-aws-xen-hvm-${os}-go_agent.tgz"
         ;;
     esac
+    cmd="${BOSH_CLI} upload-stemcell --version=${version}"
+    [ -n "${sha}" ] && cmd="${cmd} --sha1=${sha}" || cmd="${cmd} --fix"
     {
-        echo_log "RUN" "${BOSH_CLI} upload-stemcell ${stemcell}"
-        infor=$(${BOSH_CLI} upload-stemcell "${stemcell}" 2>&1)
+        echo_log "RUN" "${cmd} ${stemcell}"
+        infor=$(${cmd} "${stemcell}" 2>&1)
         rvalue=$?
     }
     if [ ${rvalue} == 0 ]
@@ -525,9 +529,11 @@ bosh_upload_stemcell() {
 
 bosh_upload_release() {
     local release="${1}"
+    local sha="${2}"
 
     local infor
     local director_name
+    local cmd
 
     director_name=$(bosh_director_name 2>&1)
     rvalue=$?
@@ -537,9 +543,11 @@ bosh_upload_release() {
         return ${rvalue}
     fi
     echo_log "INFO" "Uploading ${release} to Bosh Director ${director_name} ..."
+    cmd="${BOSH_CLI} upload-release"
+    [ -n "${sha}" ] && cmd="${cmd} --sha1=${sha}" || cmd="${cmd} --fix"
     {
-        echo_log "RUN" "${BOSH_CLI} upload-release ${release}"
-        infor=$(${BOSH_CLI} upload-release "${release}" 2>&1)
+        echo_log "RUN" "${cmd} ${release}"
+        infor=$(${cmd} "${release}" 2>&1)
         rvalue=$?
     }
     if [ ${rvalue} == 0 ]
