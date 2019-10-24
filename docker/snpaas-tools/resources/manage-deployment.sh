@@ -14,8 +14,8 @@ CREDHUB_CLI=${CREDHUB_CLI:-"credhub"}
 DEPLOYMENT_CREDS="${DEPLOYMENT_CREDS:-secrets.yml}"
 DEPLOYMENT_OPERATIONS="${DEPLOYMENT_OPERATIONS:-operations}"
 DEPLOYMENT_VARS="${DEPLOYMENT_VARS:-variables}"
-DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config}"
-DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config}"
+DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config.yml}"
+DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config.yml}"
 DEPLOYMENT_NAME_VAR="${DEPLOYMENT_NAME_VAR:-deployment_name}"
 DEPLOYMENT_PREPARE_SCRIPT="${DEPLOYMENT_PREPARE_SCRIPT:-prepare.sh}"
 DEPLOYMENT_FINISH_SCRIPT="${DEPLOYMENT_FINISH_SCRIPT:-finish.sh}"
@@ -44,8 +44,8 @@ Subcommands:
     interpolate     Create the manifest for an environment
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
-    cloud-config    Apply cloud-config
-    runtime-config  Apply runtime-config
+    cloud-config    Apply cloud-config from cloud.config.yml interpolating variables
+    runtime-config  Apply runtime-config from runtime-config.yml interpolating variables
     import-secrets  Set secrets in Credhub from <deployment-folder>/$DEPLOYMENT_CREDS file
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
@@ -59,6 +59,13 @@ You can use your BOSH_CLIENT env variables if you set BOSH_USER_NAME to '' (empt
 If there is a script '$DEPLOYMENT_PREPARE_SCRIPT' next to the base manifest,
 it will be launched before the action. If there is a script '$DEPLOYMENT_FINISH_SCRIPT'
 it will be run after the action. Both scripts receive the action as first parameter.
+
+Also you can define variables in the runtime/cloud configs or manifests/operations
+files and the program will try to find those variables in the environment, with
+the prefix of the folder, e.g. if the deployment folder is "cf-test" and you
+have defined an variable "((stemcell))" in an operations file, you can
+define a variable like "export CF_TEST_stemcell=ubuntu-xenial" and it will be
+used.
 
 EOF
 }
@@ -221,65 +228,41 @@ bosh_update_runtime_or_cloud_config() {
     local manifest="${4}"
 
     local rvalue
-    local operations_path
-    local base_manifest="$(mktemp)"
-    local generated=0
-    local cmd
     local output
+    local name=$(basename "${path}")
+    local varsdir="${path}/${DEPLOYMENT_VARS}"
+    local bosh_varsfiles=()
+    local varsenv=$(echo ${name^^} | tr '-' '_')
+    local cmd=""
 
-    if [ "${kind}" == "runtime-config" ]
+    if [ "${kind}" == "runtime" ] && [ -z "${manifest}" ]
     then
-        operations_path="${path}/${DEPLOYMENT_RUNTIMEC}"
+        manifest="${path}/${DEPLOYMENT_RUNTIMEC}"
     else
         # cloud-config
-        operations_path="${path}/${DEPLOYMENT_CLOUDC}"
+        manifest="${path}/${DEPLOYMENT_CLOUDC}"
     fi
-    if [ ! -d "${operations_path}" ]
+    if [ ! -r "${manifest}" ]
     then
-        echo_log "No ${kind} folder. Ignoring!"
+        echo_log "No ${kind} configuration. Ignoring!"
         return 0
-    fi
-    if [ -z "${manifest}" ]
-    then
-        generated=1
-        manifest="$(mktemp)"
-    fi
-    echo_log "INFO" "Generating ${kind} base manifest ..."
-    {
-        echo_log "RUN" "${BOSH_CLI} ${kind} > ${base_manifest}"
-        output="$(${BOSH_CLI} ${kind} 2>&1)"
-        rvalue=$?
-    }
-    if [ ${rvalue} == 0 ]
-    then
-        echo "${output}" > "${base_manifest}"
-        echo_log "OK" "Base ${kind} file ${base_manifest}"
-    else
-        echo_log "ERROR" ${output}
-        [ "${generated}" == "1" ] && rm -f "${manifest}"
-        return ${rvalue}
-    fi
-    bosh_interpolate "${manifest}" "${base_manifest}" "${operations_path}" ""
-    rvalue=$?
-    if [ ${rvalue} == 10 ]
-    then
-        [ "${generated}" == "1" ] && rm -f "${manifest}"
-        rm -f "${base_manifest}"
-        echo_log "INFO" "Skipping ${kind}!. Nothing to interpolate"
-        return 0
-    elif [ ${rvalue} != 0 ]
-    then
-        [ "${generated}" == "1" ] && rm -f "${manifest}"
-        rm -f "${base_manifest}"
-        echo_log "ERROR" "Could not deploy to Bosh Director!"
-        return ${rvalue}
     fi
     if [ -n "${force}" ] && [ "${force}" == "1" ]
     then
-        cmd="${BOSH_CLI} -n update-${kind} ${manifest}"
+        cmd="${BOSH_CLI} -n update-config --type=${kind} --name=${name} --vars-env=${varsenv}"
     else
-        cmd="${BOSH_CLI} update-${kind} ${manifest}"
+        cmd="${BOSH_CLI} update-config --type=${kind} --name=${name} --vars-env=${varsenv}"
     fi
+    # Load vars files
+    if [ -n "${varsdir}" ] && [ -d "${varsdir}" ]
+    then
+        while IFS=  read -r -d $'\0' line
+        do
+            bosh_varsfiles+=("${line}")
+        done < <(find -L ${varsdir} -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | sort -z)
+    fi
+    # List of varsfiles with the proper path
+    cmd="${cmd} ${bosh_varsfiles[@]/#/--vars-file }"
     echo_log "RUN" "${cmd}"
     exec 3>&1                     # Save the place that stdout (1) points to.
     {
@@ -293,8 +276,6 @@ bosh_update_runtime_or_cloud_config() {
     else
         echo_log "ERROR" ${output}
     fi
-    [ "${generated}" == "1" ] && rm -f "${manifest}"
-    rm -f "${base_manifest}"
     return ${rvalue}
 }
 
@@ -345,6 +326,7 @@ bosh_deployment_manage() {
     local varsdir="${path}/${DEPLOYMENT_VARS}"
     local prepare="${DEPLOYMENT_PREPARE_SCRIPT}"
     local finish="${DEPLOYMENT_FINISH_SCRIPT}"
+    local varsenv=$(basename "${deployment}")
     local director_name
     local director_uuid
     local base=""
@@ -361,6 +343,7 @@ bosh_deployment_manage() {
         echo_log "ERROR" "Could not find deployment folder ${path}!"
         return 1
     fi
+    varsenv=$(echo ${varsenv^^} | tr '-' '_')
     director_uuid=$(bosh_uuid)
     echo_log "INFO" "Managing Bosh Director: ${director_name}  uuid=${director_uuid}"
 
@@ -375,10 +358,10 @@ bosh_deployment_manage() {
         rvalue=$?
     else
         # Check if cloud-config and runtime-config need to be updated
-        bosh_update_runtime_or_cloud_config "runtime-config" "${path}" "${force}"
+        bosh_update_runtime_or_cloud_config "runtime" "${path}" "${force}"
         rvalue=$?
         [ ${rvalue} != 0 ] && return ${rvalue}
-        bosh_update_runtime_or_cloud_config "cloud-config" "${path}" "${force}"
+        bosh_update_runtime_or_cloud_config "cloud" "${path}" "${force}"
         rvalue=$?
         [ ${rvalue} != 0 ] && return ${rvalue}
 
@@ -396,7 +379,7 @@ bosh_deployment_manage() {
             echo_log "ERROR" "Cannot generate manifest for ${path}"
         elif [ "${action}" == "deploy" ]
         then
-            # if manifest has director uuid, check it!
+            args="--vars-env=${varsenv} ${args}"
             [ -r "${secrets}" ] || secrets=""
             [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
             bosh_deploy_manifest "${deployment}" "${manifest}" "${secrets}" "${force}" ${args}

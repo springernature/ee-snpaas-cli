@@ -78,8 +78,8 @@ Please define CF_ environment variables!
 │   ├── 20-operation2.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation2.yml
 │   ├── 99-springer-nature-operation-custom.yml
 ├── secrets.yml
-├── cloud-config
-├── runtime-config
+├── runtime-config.yml
+├── cloud-config.yml
 └── variables
     ├── variables-custom1.yml
     ├── variables-custom1.yml
@@ -119,6 +119,8 @@ Given a deployment folder called 'app-logging' with this structure:
 
 app-logging
 ├── prepare.sh
+├── runtime-config.yml
+├── cloud-config.yml
 ├── operations
 │   ├── 00-base.yml -> ../cf-logging-boshrelease/manifest/logstash.yml
 │   ├── 20-cf-apps-es.yml -> ../cf-logging-boshrelease/manifest/operations/pipelines/cf-apps-es-throttling.yml
@@ -154,6 +156,13 @@ app-logging
 
   The variable 'deployment_name' is provided by the program and taken from the
   folder name
+
+* It is possible to define variables in the runtime/cloud configs or
+  manifests/operations files and the program will try to find those variables in
+  the environment, with the prefix of the folder, e.g. if the deployment folder 
+  is "cf-test" and you have defined an variable "((stemcell))" in an operations
+  file, you can define a variable like "export CF_TEST_stemcell=ubuntu-xenial"
+  and it will be used.
 
 
 # Why?
