@@ -316,37 +316,21 @@ bosh_deployment_manage() {
     local manifest="${3}"
     local force="${4}"
     shift 4
-    local args="${@}"
 
     local rvalue
     local cmd
     local deployment="${path}"
-    local secrets="${path}/${DEPLOYMENT_CREDS}"
-    local operations="${path}/${DEPLOYMENT_OPERATIONS}"
-    local varsdir="${path}/${DEPLOYMENT_VARS}"
     local prepare="${DEPLOYMENT_PREPARE_SCRIPT}"
     local finish="${DEPLOYMENT_FINISH_SCRIPT}"
-    local varsenv=$(basename "${deployment}")
     local director_name
     local director_uuid
     local base=""
 
-    director_name=$(bosh_director_name 2>&1)
-    rvalue=$?
-    if [ ${rvalue} != 0 ]
-    then
-        echo_log "ERROR" "Could not get to Bosh Director: ${director_name}"
-        return 1
-    fi
     if [ ! -d "${path}" ]
     then
         echo_log "ERROR" "Could not find deployment folder ${path}!"
         return 1
     fi
-    varsenv=$(echo ${varsenv^^} | tr '-' '_')
-    director_uuid=$(bosh_uuid)
-    echo_log "INFO" "Managing Bosh Director: ${director_name}  uuid=${director_uuid}"
-
     # Run prepare script
     run_script "prepare" "${path}" "${prepare}" "${action}"
     rvalue=$?
@@ -354,37 +338,11 @@ bosh_deployment_manage() {
 
     if [ "${action}" == "destroy" ]
     then
-        bosh_destroy_manifest "${deployment}" ${args}
+        bosh_destroy "${deployment}" ${@}
         rvalue=$?
     else
-        # Check if cloud-config and runtime-config need to be updated
-        bosh_update_runtime_or_cloud_config "runtime" "${path}" "${force}"
+        bosh_deploy "${deployment}" "${manifest}" "${force}" ${@}
         rvalue=$?
-        [ ${rvalue} != 0 ] && return ${rvalue}
-        bosh_update_runtime_or_cloud_config "cloud" "${path}" "${force}"
-        rvalue=$?
-        [ ${rvalue} != 0 ] && return ${rvalue}
-
-        # If there is a operations folder, the base should be there, otherwise take
-        # the first yml manifest (lexical order) as base
-        base=""
-        if [ ! -d "${operations}" ]
-        then
-            base=$(find -L "${path}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
-        fi
-        bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
-        rvalue=$?
-        if [ ${rvalue} != 0 ]
-        then
-            echo_log "ERROR" "Cannot generate manifest for ${path}"
-        elif [ "${action}" == "deploy" ]
-        then
-            args="--vars-env=${varsenv} ${args}"
-            [ -r "${secrets}" ] || secrets=""
-            [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
-            bosh_deploy_manifest "${deployment}" "${manifest}" "${secrets}" "${force}" ${args}
-            rvalue=$?
-        fi
     fi
     # Run finish script
     run_script "finish" "${path}" "${finish}" "${action}" "${rvalue}"
@@ -393,7 +351,7 @@ bosh_deployment_manage() {
 }
 
 
-bosh_destroy_manifest() {
+bosh_destroy() {
     local deployment="${1}"
     shift
     local args="${@}"
@@ -401,8 +359,18 @@ bosh_destroy_manifest() {
     local cmd="${BOSH_CLI} ${BOSH_EXTRA_OPS} -n -d ${deployment} delete-deployment --force"
     local output
     local rvalue
-
-    echo_log "INFO" "Deleting ${deployment} from Bosh Director ..."
+    local director_uuid
+    local director_name
+    
+    director_name=$(bosh_director_name 2>&1)
+    rvalue=$?
+    if [ ${rvalue} != 0 ]
+    then
+        echo_log "ERROR" "Could not get to Bosh Director: ${director_name}"
+        return 1
+    fi
+    director_uuid=$(bosh_uuid)
+    echo_log "INFO" "Deleting deployment ${deployment} on Bosh Director: ${director_name}  uuid=${director_uuid}"
     echo_log "RUN" "${cmd} ${args}"
     exec 3>&1                     # Save the place that stdout (1) points to.
     {
@@ -420,17 +388,79 @@ bosh_destroy_manifest() {
 }
 
 
+bosh_deploy() {
+    local deployment="${1}"
+    local manifest="${2}"
+    local force="${3}"
+    shift 3
+
+    local rvalue=0
+    local director_uuid
+    local director_name
+
+    director_name=$(bosh_director_name 2>&1)
+    rvalue=$?
+    if [ ${rvalue} != 0 ]
+    then
+        echo_log "ERROR" "Could not get to Bosh Director: ${director_name}"
+        return 1
+    fi
+    director_uuid=$(bosh_uuid)
+    echo_log "INFO" "Deploying deployment ${deployment} via Bosh Director: ${director_name}  uuid=${director_uuid}"
+
+    # Check if cloud-config and runtime-config need to be updated
+    bosh_update_runtime_or_cloud_config "runtime" "${deployment}" "${force}"
+    rvalue=$?
+    [ ${rvalue} != 0 ] && return ${rvalue}
+    bosh_update_runtime_or_cloud_config "cloud" "${deployment}" "${force}"
+    rvalue=$?
+    [ ${rvalue} != 0 ] && return ${rvalue}
+    bosh_deploy_manifest "${deployment}" "${manifest}" "${force}" ${@}
+    rvalue=$?
+    return ${rvalue}
+}
+
+
 bosh_deploy_manifest() {
     local deployment="${1}"
     local manifest="${2}"
-    local secrets="${3}"
-    local force="${4}"
-    shift 4
+    local force="${3}"
+    shift 3
     local args="${@}"
 
     local cmd
     local output
     local rvalue
+    local base=""
+    local secrets="${deployment}/${DEPLOYMENT_CREDS}"
+    local operations="${deployment}/${DEPLOYMENT_OPERATIONS}"
+    local varsdir="${deployment}/${DEPLOYMENT_VARS}"
+    local varsenv=$(basename "${deployment}")
+
+    if [ ! -d "${deployment}" ]
+    then
+        echo_log "ERROR" "Could not find deployment folder ${deployment}!"
+        return 1
+    fi
+    # If there is a operations folder, the base should be there, otherwise take
+    # the first yml manifest (lexical order) as base in the deployment folder, and skip the operations folder.
+    # Useful for deployments with no operations.
+    base=""
+    if [ ! -d "${operations}" ]
+    then
+        base=$(find -L "${deployment}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
+    fi
+    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
+    rvalue=$?
+    if [ ${rvalue} != 0 ]
+    then
+        echo_log "ERROR" "Cannot generate manifest for ${deployment}"
+        return 1
+    fi
+    varsenv=$(echo ${varsenv^^} | tr '-' '_')
+    args="--vars-env=${varsenv} ${args}"
+    [ -r "${secrets}" ] || secrets=""
+    [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
 
     if [ -n "${force}" ] && [ "${force}" == "1" ]
     then
