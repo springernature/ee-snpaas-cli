@@ -509,16 +509,16 @@ bosh_upload_stemcell() {
     echo_log "INFO" "Uploading ${os} version ${version} for ${cpi} to Bosh Director ..."
     case "${cpi}" in
     gcp|google)
-        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/google/bosh-stemcell-${version}-google-kvm-${os}-go_agent.tgz"
+        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/${version}/bosh-stemcell-${version}-google-kvm-${os}-go_agent.tgz"
         ;;
     vsphere)
-        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/vsphere/bosh-stemcell-${version}-vsphere-esxi-${os}-go_agent.tgz"
+        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/${version}/bosh-stemcell-${version}-vsphere-esxi-${os}-go_agent.tgz"
         ;;
     openstack)
-        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/openstack/bosh-stemcell-${version}-openstack-kvm-${os}-go_agent.tgz"
+        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/${version}/bosh-stemcell-${version}-openstack-kvm-${os}-go_agent.tgz"
         ;;
     aws)
-        stemcell="https://s3.amazonaws.com/bosh-aws-light-stemcells/light-bosh-stemcell-${version}-aws-xen-hvm-${os}-go_agent.tgz"
+        stemcell="https://s3.amazonaws.com/bosh-core-stemcells/${version}/bosh-stemcell-${version}-aws-xen-hvm-${os}-go_agent.tgz"
         ;;
     esac
     cmd="${BOSH_CLI} upload-stemcell --version=${version}"
