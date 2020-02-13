@@ -336,14 +336,24 @@ bosh_deployment_manage() {
     rvalue=$?
     [ ${rvalue} != 0 ] && return ${rvalue}
 
-    if [ "${action}" == "destroy" ]
-    then
+    case ${action} in
+      "destroy")
         bosh_destroy "${deployment}" ${@}
         rvalue=$?
-    else
+        ;;
+      "deploy")
         bosh_deploy "${deployment}" "${manifest}" "${force}" ${@}
         rvalue=$?
-    fi
+        ;;
+      "int")
+        bosh_interpolate_manifest "${deployment}" "${manifest}" ${@}
+        rvalue=$?
+        ;;
+      *)
+        echo_log "ERROR" "Deployment action not supported!"
+        rvalue=1
+      ;;
+    esac
     # Run finish script
     run_script "finish" "${path}" "${finish}" "${action}" "${rvalue}"
     #rvalue=$?
@@ -482,6 +492,42 @@ bosh_deploy_manifest() {
         echo_log "OK" "Deployment updated"
     else
         echo_log "ERROR" ${output}
+    fi
+    return ${rvalue}
+}
+
+
+bosh_interpolate_manifest() {
+    local deployment="${1}"
+    local manifest="${2}"
+    shift 2
+    local args="${@}"
+
+    local rvalue
+    local base=""
+    local operations="${deployment}/${DEPLOYMENT_OPERATIONS}"
+    local varsdir="${deployment}/${DEPLOYMENT_VARS}"
+
+    if [ ! -d "${deployment}" ]
+    then
+        echo_log "ERROR" "Could not find deployment folder ${deployment}!"
+        return 1
+    fi
+    # If there is a operations folder, the base should be there, otherwise take
+    # the first yml manifest (lexical order) as base in the deployment folder, and skip the operations folder.
+    # Useful for deployments with no operations.
+    base=""
+    if [ ! -d "${operations}" ]
+    then
+        base=$(find -L "${deployment}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
+    fi
+    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
+    rvalue=$?
+    if [ ${rvalue} == 0 ]
+    then
+        echo_log "OK" "Deployment manifest generated"
+    else
+        echo_log "ERROR" "Cannot generate manifest for ${deployment}"
     fi
     return ${rvalue}
 }
@@ -846,7 +892,7 @@ then
             bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "deploy" "${MANIFEST}" "${FORCE}"
             RVALUE=$?
             ;;
-        interpolate|int|bohs-int|bosh-interpolate)
+        interpolate|int|bosh-int|bosh-interpolate)
             bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "int" "${MANIFEST}"
             RVALUE=$?
             [ ${STDOUT} == 1 ] && cat "${MANIFEST}"
