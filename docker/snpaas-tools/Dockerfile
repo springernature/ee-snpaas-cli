@@ -1,5 +1,5 @@
 #FROM alpine:3.10
-FROM debian:10.1-slim
+FROM debian:10.2-slim
 
 # docker build . -t snpaas-tools
 # docker run -it -v $(pwd)/data snpaas-tools help
@@ -8,7 +8,7 @@ FROM debian:10.1-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=2.3
+ARG VERSION=2.4
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
