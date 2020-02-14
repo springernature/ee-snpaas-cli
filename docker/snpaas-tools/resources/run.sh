@@ -5,7 +5,7 @@ shopt -s nullglob
 command=$1
 shift
 
-echo "# Running snpaas cli version ${SNPAAS_VERSION}"
+echo "# Running snpaas cli version ${SNPAAS_VERSION}: $0 ${command} $*"
 
 SNPAAS_HOME=${SNPAAS_HOME:-/home/snpaas}
 
@@ -69,10 +69,10 @@ case ${command} in
     exit 0
   ;;
   bosh-*|deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets|-m|-p)
-    exec su --preserve-environment --shell /bin/bash $SNPAAS_USER /usr/local/bin/manage-deployment.sh ${command} ${@}
+    exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-deployment.sh ${command} ${@}
   ;;
   cf-*)
-    exec su --preserve-environment --shell /bin/bash $SNPAAS_USER /usr/local/bin/manage-cf.sh ${command} ${@}
+    exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-cf.sh ${command} ${@}
   ;;
   *)
     exec ${command} ${@}
