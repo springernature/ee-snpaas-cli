@@ -12,33 +12,35 @@ with all environment variables you want to be setup in the running container.
 If you do not have a '.envrc' file but you have the following environment variables
 in your environment, then Bosh-cli, Credhub-cli and CF-cli will automatically log-in: 
 
-  "BOSH_CLIENT"
-  "BOSH_CLIENT_SECRET"
-  "BOSH_ENVIRONMENT"
-  "BOSH_CA_CERT"
-  "CREDHUB_SERVER"
-  "CREDHUB_CLIENT"
-  "CREDHUB_SECRET"
-  "CREDHUB_CA_CERT"
-  "GCP_PROJECT"
-  "GCP_ZONE"
-  "GCP_REGION"
-  "CF_USER"
-  "CF_PASSWORD"
-  "CF_API"
-  "CF_ORG"
-  "CF_SPACE"
+    "BOSH_CLIENT"
+    "BOSH_CLIENT_SECRET"
+    "BOSH_ENVIRONMENT"
+    "BOSH_CA_CERT"
+    "CREDHUB_SERVER"
+    "CREDHUB_CLIENT"
+    "CREDHUB_SECRET"
+    "CREDHUB_CA_CERT"
+    "GCP_PROJECT"
+    "GCP_ZONE"
+    "GCP_REGION"
+    "CF_USER"
+    "CF_PASSWORD"
+    "CF_API"
+    "CF_ORG"
+    "CF_SPACE"
 
 Then you are ready to manage to manage deployments, with this subcommands and options:
 
-<subcommand> <folder> [options]
+    <subcommand> <folder> [options]
 
 Options:
+
     -m      Specify a manifest file, instead of generating a random one
     -p      Deployments path. Default is $DEPLOYMENTS_PATH
     -h      Shows usage help
 
 Subcommands:
+
     help            Shows usage help
 
 Bosh/deployment subcommands
@@ -52,9 +54,7 @@ Bosh/deployment subcommands
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
 
-CloudFoundry subcommands
-
-Please define CF_ environment variables!
+CloudFoundry subcommands (Please define CF_ environment variables!)
 
     cf-top                  top like command for Cloudfoundry
     cf-disk                 Full disk usage report
@@ -66,24 +66,24 @@ Please define CF_ environment variables!
 
 # Folder structure:
 
-<deployment-folder>
-├── <boshrelease1-git-submodule-folder>
-├── <boshrelease2-git-submodule-folder>
-├── ...
-├── prepare.sh
-├── finish.sh
-├── operations
-│   ├── 00-base-manifest.yml -> ../<boshrelease1-git-submodule-folder>/manifest/base.yml
-│   ├── 10-operation.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation.yml
-│   ├── 20-operation2.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation2.yml
-│   ├── 99-springer-nature-operation-custom.yml
-├── secrets.yml
-├── runtime-config.yml
-├── cloud-config.yml
-└── variables
-    ├── variables-custom1.yml
-    ├── variables-custom1.yml
-    └── variables-provided.yml -> ../<boshrelease1-git-submodule-folder>/manifest/vars.yml
+    <deployment-folder>
+    ├── <boshrelease1-git-submodule-folder>
+    ├── <boshrelease2-git-submodule-folder>
+    ├── ...
+    ├── prepare.sh
+    ├── finish.sh
+    ├── operations
+    │   ├── 00-base-manifest.yml -> ../<boshrelease1-git-submodule-folder>/manifest/base.yml
+    │   ├── 10-operation.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation.yml
+    │   ├── 20-operation2.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation2.yml
+    │   ├── 99-springer-nature-operation-custom.yml
+    ├── secrets.yml
+    ├── runtime-config.yml
+    ├── cloud-config.yml
+    └── variables
+        ├── variables-custom1.yml
+        ├── variables-custom1.yml
+        └── variables-provided.yml -> ../<boshrelease1-git-submodule-folder>/manifest/vars.yml
 
 
 Secrets processed by this program are type 'value' and they will be imported/exported
@@ -117,26 +117,26 @@ file properly (secrets.yml is always ignored, so do not worry about it).
 
 Given a deployment folder called 'app-logging' with this structure:
 
-app-logging
-├── prepare.sh
-├── runtime-config.yml
-├── cloud-config.yml
-├── operations
-│   ├── 00-base.yml -> ../cf-logging-boshrelease/manifest/logstash.yml
-│   ├── 20-cf-apps-es.yml -> ../cf-logging-boshrelease/manifest/operations/pipelines/cf-apps-es-throttling.yml
-│   ├── 25-add-statsd-conf.yml -> ../cf-logging-boshrelease/manifest/operations/add-statsd-conf.yml
-│   ├── 30-add-throttle-param.yml -> ../cf-logging-boshrelease/manifest/operations/add-throttle-param.yml
-│   ├── 50-add-es-cloud-id.yml -> ../cf-logging-boshrelease/manifest/operations/add-es-cloud-id.yml
-│   ├── 50-add-es-xpack.yml -> ../cf-logging-boshrelease/manifest/operations/add-es-xpack.yml
-│   ├── 80-add-logstash-exporter.yml -> ../cf-logging-boshrelease/manifest/operations/add-logstash-exporter.yml
-│   ├── 90-add-release-version.yml -> ../cf-logging-boshrelease/manifest/operations/add-release-version.yml
-│   ├── 99-deployment-settings.yml
-│   └── 99-iaas.yml -> ../cf-logging-boshrelease/manifest/operations/add-iaas-parameters.yml
-├── secrets.yml
-└── variables
-    ├── iaas.yml
-    ├── throttle-param.yml
-    └── vars-release-version.yml -> ../cf-logging-boshrelease/manifest/vars-release-version.yml
+    app-logging
+    ├── prepare.sh
+    ├── runtime-config.yml
+    ├── cloud-config.yml
+    ├── operations
+    │   ├── 00-base.yml -> ../cf-logging-boshrelease/manifest/logstash.yml
+    │   ├── 20-cf-apps-es.yml -> ../cf-logging-boshrelease/manifest/operations/pipelines/cf-apps-es-throttling.yml
+    │   ├── 25-add-statsd-conf.yml -> ../cf-logging-boshrelease/manifest/operations/add-statsd-conf.yml
+    │   ├── 30-add-throttle-param.yml -> ../cf-logging-boshrelease/manifest/operations/add-throttle-param.yml
+    │   ├── 50-add-es-cloud-id.yml -> ../cf-logging-boshrelease/manifest/operations/add-es-cloud-id.yml
+    │   ├── 50-add-es-xpack.yml -> ../cf-logging-boshrelease/manifest/operations/add-es-xpack.yml
+    │   ├── 80-add-logstash-exporter.yml -> ../cf-logging-boshrelease/manifest/operations/add-logstash-exporter.yml
+    │   ├── 90-add-release-version.yml -> ../cf-logging-boshrelease/manifest/operations/add-release-version.yml
+    │   ├── 99-deployment-settings.yml
+    │   └── 99-iaas.yml -> ../cf-logging-boshrelease/manifest/operations/add-iaas-parameters.yml
+    ├── secrets.yml
+    └── variables
+        ├── iaas.yml
+        ├── throttle-param.yml
+        └── vars-release-version.yml -> ../cf-logging-boshrelease/manifest/vars-release-version.yml
 
 
 * To deploy or update the deployment called 'app-logging', execute: 'deploy app-logging'.
@@ -150,9 +150,9 @@ app-logging
 * In order to apply the name of the folder to the deployment, you need to provide
   an operations file with this operation.
 
-  - type: replace
-    path: /name
-    value: ((deployment_name))
+      - type: replace
+        path: /name
+        value: ((deployment_name))
 
   The variable 'deployment_name' is provided by the program and taken from the
   folder name
