@@ -7,13 +7,15 @@ PROGRAM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROGRAM_LOG="${PROGRAM_LOG:-$(pwd)/$PROGRAM.log}"
 PROGRAM_OPTS=$@
 
-BOSH_CLI=${BOSH_CLI:-bosh}
+BOSH_CLI=${BOSH_CLI:-bosh-cli}
 BOSH_EXTRA_OPS="--tty --no-color"
 CREDHUB_CLI=${CREDHUB_CLI:-"credhub"}
 
+DEPLOYMENT_STATE="${DEPLOYMENT_STATE:-state.json}"
 DEPLOYMENT_CREDS="${DEPLOYMENT_CREDS:-secrets.yml}"
 DEPLOYMENT_OPERATIONS="${DEPLOYMENT_OPERATIONS:-operations}"
 DEPLOYMENT_VARS="${DEPLOYMENT_VARS:-variables}"
+DEPLOYMENT_VARS_FILE="${DEPLOYMENT_VARS_FILE:-var-files.yml}"
 DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config.yml}"
 DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config.yml}"
 DEPLOYMENT_NAME_VAR="${DEPLOYMENT_NAME_VAR:-deployment_name}"
@@ -41,6 +43,8 @@ Options:
 
 Subcommands:
     help            Shows usage help
+    create-en       Deploy a Bosh Director
+    delete-env      Destroy a Bosh Director
     interpolate     Create the manifest for an environment
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
@@ -150,14 +154,18 @@ bosh_interpolate() {
     local base_manifest="${2}"
     local manifest_operations_path="${3}"
     local manifest_vars_path="${4}"
-    shift 4
+    local manifest_var_files_file="${5}"
+    shift 5
     local args="${@}"
 
     local bosh_operations=()
     local bosh_varsfiles=()
+    local bosh_varfiles=()
     local operations=()
     local rvalue
     local output
+    local varid
+    local varfile
     local cmd="${BOSH_CLI} interpolate"
 
     echo_log "INFO" "Generating interpolated manifests from operations ${manifest_operations_path} ..."
@@ -196,6 +204,27 @@ bosh_interpolate() {
             cmd="${cmd} ${base_manifest} ${operations[@]/#/-o }"
         fi
     fi
+    # Load var-files
+    if [ -n "${manifest_var_files_file}" ] && [ -r "${manifest_var_files_file}" ]
+    then
+        while read -r line
+        do
+            if [ -n "${line}" ]
+            then
+                varid="$(echo ${line%%:*})"
+                varfile="$(echo ${line#*:})"
+                # test if varfile is there
+                if [ -r "${varfile}" ]
+                then
+                    bosh_varfiles+=("${varid}=${varfile}")
+                else
+                    echo_log "ERROR" "var-file ${varfile} not readable!"
+                    return 1
+                fi
+            fi
+        done <<<$(grep -v '^#' "${manifest_var_files_file}")
+    fi
+    cmd="${cmd} ${bosh_varfiles[@]/#/--var-file }"
     # Load vars files
     if [ -n "${manifest_vars_path}" ] && [ -d "${manifest_vars_path}" ]
     then
@@ -322,8 +351,6 @@ bosh_deployment_manage() {
     local deployment="${path}"
     local prepare="${DEPLOYMENT_PREPARE_SCRIPT}"
     local finish="${DEPLOYMENT_FINISH_SCRIPT}"
-    local director_name
-    local director_uuid
     local base=""
 
     if [ ! -d "${path}" ]
@@ -335,18 +362,33 @@ bosh_deployment_manage() {
     run_script "prepare" "${path}" "${prepare}" "${action}"
     rvalue=$?
     [ ${rvalue} != 0 ] && return ${rvalue}
-
     case ${action} in
-      "destroy")
+      interpolate|int|bosh-int|bosh-interpolate)
+        bosh_interpolate_manifest "${deployment}" "${manifest}" ${@}
+        rvalue=$?
+        ;;
+      destroy|bosh-destroy|delete|bosh-delete)
         bosh_destroy "${deployment}" ${@}
         rvalue=$?
         ;;
-      "deploy")
+      deploy|bosh-deploy)
         bosh_deploy "${deployment}" "${manifest}" "${force}" ${@}
         rvalue=$?
         ;;
-      "int")
-        bosh_interpolate_manifest "${deployment}" "${manifest}" ${@}
+      create-env)
+        bosh_manage_director "create-env" "${deployment}" "${manifest}" ${@}
+        rvalue=$?
+        ;;
+      delete-env)
+        bosh_manage_director "delete-env" "${deployment}" "${manifest}" "${force}" ${@}
+        rvalue=$?
+        ;;
+      cloud-config)
+        bosh_update_runtime_or_cloud_config "cloud" "${deployment}" "${force}"
+        rvalue=$?
+        ;;
+      runtime-config)
+        bosh_update_runtime_or_cloud_config "runtime" "${deployment}" "${force}"
         rvalue=$?
         ;;
       *)
@@ -419,14 +461,79 @@ bosh_deploy() {
     echo_log "INFO" "Deploying deployment ${deployment} via Bosh Director: ${director_name}  uuid=${director_uuid}"
 
     # Check if cloud-config and runtime-config need to be updated
-    bosh_update_runtime_or_cloud_config "runtime" "${deployment}" "${force}"
-    rvalue=$?
-    [ ${rvalue} != 0 ] && return ${rvalue}
-    bosh_update_runtime_or_cloud_config "cloud" "${deployment}" "${force}"
-    rvalue=$?
-    [ ${rvalue} != 0 ] && return ${rvalue}
+    #bosh_update_runtime_or_cloud_config "runtime" "${deployment}" "${force}"
+    #rvalue=$?
+    #[ ${rvalue} != 0 ] && return ${rvalue}
+    #bosh_update_runtime_or_cloud_config "cloud" "${deployment}" "${force}"
+    #rvalue=$?
+    #[ ${rvalue} != 0 ] && return ${rvalue}
+
     bosh_deploy_manifest "${deployment}" "${manifest}" "${force}" ${@}
     rvalue=$?
+    return ${rvalue}
+}
+
+
+bosh_manage_director() {
+    local action="${1}"
+    local deployment="${2}"
+    local manifest="${3}"
+    shift 3
+    local args="${@}"
+
+    local cmd
+    local output
+    local rvalue
+    local base=""
+    local state="${deployment}/${DEPLOYMENT_STATE}"
+    local secrets="${deployment}/${DEPLOYMENT_CREDS}"
+    local operations="${deployment}/${DEPLOYMENT_OPERATIONS}"
+    local varsdir="${deployment}/${DEPLOYMENT_VARS}"
+    local varfiles="${deployment}/${DEPLOYMENT_VARS_FILE}"
+    local varsenv=$(basename "${deployment}")
+
+    if [ ! -d "${deployment}" ]
+    then
+        echo_log "ERROR" "Could not find deployment folder ${deployment}!"
+        return 1
+    fi
+    # If there is a operations folder, the base should be there, otherwise take
+    # the first yml manifest (lexical order) as base in the deployment folder, and skip the operations folder.
+    # Useful for deployments with no operations.
+    base=""
+    if [ ! -d "${operations}" ]
+    then
+        base=$(find -L "${deployment}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
+    fi
+    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}" "${varfiles}"
+    rvalue=$?
+    if [ ${rvalue} != 0 ]
+    then
+        echo_log "ERROR" "Cannot generate manifest for ${deployment}"
+        return 1
+    fi
+    varsenv=$(echo ${varsenv^^} | tr '-' '_')
+    args="--vars-env=${varsenv} ${args}"
+    [ -r "${secrets}" ] || secrets=""
+    [ -n "${DEPLOYMENT_NAME_VAR}" ] && args="--var=${DEPLOYMENT_NAME_VAR}=${deployment} ${args}"
+
+    cmd="${BOSH_CLI} ${action} --state=${state} --vars-store=${secrets} ${manifest}"
+    echo_log "INFO" "Running ${action} on '${manifest}' as Bosh Director ..."
+    echo_log "RUN" "${cmd} ${args}"
+    exec 3>&1                     # Save the place that stdout (1) points to.
+    {
+        # output=$(${cmd} ${args} 2>&1 1>&3)
+        output="echo hola"
+        true
+        rvalue=$?
+    } 2> >(tee -a ${PROGRAM_LOG} >&2)
+    exec 3>&-                    # Close FD #3
+    if [ ${rvalue} == 0 ]
+    then
+        echo_log "OK" "Bosh deployed"
+    else
+        echo_log "ERROR" ${output}
+    fi
     return ${rvalue}
 }
 
@@ -445,6 +552,7 @@ bosh_deploy_manifest() {
     local secrets="${deployment}/${DEPLOYMENT_CREDS}"
     local operations="${deployment}/${DEPLOYMENT_OPERATIONS}"
     local varsdir="${deployment}/${DEPLOYMENT_VARS}"
+    local varfiles="${deployment}/${DEPLOYMENT_VARS_FILE}"
     local varsenv=$(basename "${deployment}")
 
     if [ ! -d "${deployment}" ]
@@ -460,7 +568,7 @@ bosh_deploy_manifest() {
     then
         base=$(find -L "${deployment}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
     fi
-    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
+    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}" "${varfiles}"
     rvalue=$?
     if [ ${rvalue} != 0 ]
     then
@@ -507,6 +615,7 @@ bosh_interpolate_manifest() {
     local base=""
     local operations="${deployment}/${DEPLOYMENT_OPERATIONS}"
     local varsdir="${deployment}/${DEPLOYMENT_VARS}"
+    local varfiles="${deployment}/${DEPLOYMENT_VARS_FILE}"
 
     if [ ! -d "${deployment}" ]
     then
@@ -521,7 +630,7 @@ bosh_interpolate_manifest() {
     then
         base=$(find -L "${deployment}" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -a ! -name "${DEPLOYMENT_CREDS}"  | sort | head -n 1)
     fi
-    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}"
+    bosh_interpolate "${manifest}" "${base}" "${operations}" "${varsdir}" "${varfiles}"
     rvalue=$?
     if [ ${rvalue} == 0 ]
     then
@@ -875,7 +984,7 @@ then
             credhub_manage "${DEPLOYMENT_FOLDER}" "import"
             RVALUE=$?
             ;;
-        deploy|bosh-deploy)
+        deploy|bosh-deploy|create-env)
             # Process ask option
             while getopts ":f" optsub
             do
@@ -889,7 +998,7 @@ then
                 esac
             done
             shift $((OPTIND -1))
-            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "deploy" "${MANIFEST}" "${FORCE}"
+            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}" "${FORCE}"
             RVALUE=$?
             ;;
         interpolate|int|bosh-int|bosh-interpolate)
@@ -897,7 +1006,7 @@ then
             RVALUE=$?
             [ ${STDOUT} == 1 ] && cat "${MANIFEST}"
             ;;
-        destroy|bosh-destroy|delete|bosh-delete)
+        destroy|bosh-destroy|delete|bosh-delete|delete-env)
             # Process force option
             while getopts ":f" optsub
             do
@@ -913,7 +1022,7 @@ then
             shift $((OPTIND -1))
             if [ ${FORCE} == 1 ]
             then
-                bosh_deployment_manage "${DEPLOYMENT_FOLDER}" destroy "${MANIFEST}" "${FORCE}"
+                bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}" "${FORCE}"
                 RVALUE=$?
             else
                 echo_log "Destroy an deployment requires a bit more force"
