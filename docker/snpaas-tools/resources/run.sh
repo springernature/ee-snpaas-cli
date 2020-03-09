@@ -68,8 +68,12 @@ case ${command} in
     echo
     exit 0
   ;;
-  bosh-*|deploy|interpolate|int|destroy|import-secrets|export-secrets|list-secrets|-m|-p)
+  bosh-*|deploy|interpolate|int|destroy|-m|-p)
     exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-deployment.sh ${command} ${@}
+  ;;
+  import-secrets|export-secrets|list-secrets|-p)
+    # ~/.credhub/config.json is created with restrictive permissions, running as user does not work
+    exec /usr/local/bin/manage-deployment.sh ${command} ${@}
   ;;
   cf-*)
     exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-cf.sh ${command} ${@}
