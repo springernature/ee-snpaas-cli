@@ -46,6 +46,8 @@ Subcommands:
 Bosh/deployment subcommands
 
     interpolate     Create the manifest for an environment
+    create-en       Deploy a Bosh Director
+    delete-env      Destroy a Bosh Director
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
     cloud-config    Apply cloud-config operations files from Director cloud-config
@@ -70,6 +72,8 @@ CloudFoundry subcommands (Please define CF_ environment variables!)
     ├── <boshrelease1-git-submodule-folder>
     ├── <boshrelease2-git-submodule-folder>
     ├── ...
+    ├── [state.json]
+    ├── var-files.yml
     ├── prepare.sh
     ├── finish.sh
     ├── operations
@@ -106,12 +110,20 @@ will receive the action as first argument, and the "finish.sh" script will also 
 the exit code from the action (the finish script is always executed, even if the 
 action fails).
 
+'var-files.yml' is a simple yaml key-value store to define 'var-file' arguments
+to bosh client. Each line of this file will become an argument of '--var-file'
+parameters, eg: 'director_gcs_credentials_json: ../gcp-creds/bosh-user/sn-paas-74d6f8c8e43e.json'
+will become '--var-file director_gcs_credentials_json=../gcp-creds/bosh-user/sn-paas-74d6f8c8e43e.json'
+Files are relative paths to the folder where snpaas-cli is being executed
+(do not use absolute paths here!).
+
 The operations file is not required if you have a simple manifest which does not need
 operations files. In this situation, just copy the manifest to the deployment folder
 and make sure there is no operations folder there. The first yaml file (in lexical
 order) will be taken as manifest and deployed, so make sure you call the manifest
 file properly (secrets.yml is always ignored, so do not worry about it).
 
+When deploying a Bosh-director, a state file 'state.json' will be created.
 
 # Usage examples
 
