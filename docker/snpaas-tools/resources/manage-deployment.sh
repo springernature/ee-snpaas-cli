@@ -7,7 +7,7 @@ PROGRAM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROGRAM_LOG="${PROGRAM_LOG:-$(pwd)/$PROGRAM.log}"
 PROGRAM_OPTS=$@
 
-BOSH_CLI=${BOSH_CLI:-bosh-cli}
+BOSH_CLI=${BOSH_CLI:-bosh}
 BOSH_EXTRA_OPS="--tty --no-color"
 CREDHUB_CLI=${CREDHUB_CLI:-"credhub"}
 
@@ -16,8 +16,8 @@ DEPLOYMENT_CREDS="${DEPLOYMENT_CREDS:-secrets.yml}"
 DEPLOYMENT_OPERATIONS="${DEPLOYMENT_OPERATIONS:-operations}"
 DEPLOYMENT_VARS="${DEPLOYMENT_VARS:-variables}"
 DEPLOYMENT_VARS_FILE="${DEPLOYMENT_VARS_FILE:-var-files.yml}"
-DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config.yml}"
-DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config.yml}"
+DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config}"
+DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config}"
 DEPLOYMENT_NAME_VAR="${DEPLOYMENT_NAME_VAR:-deployment_name}"
 DEPLOYMENT_PREPARE_SCRIPT="${DEPLOYMENT_PREPARE_SCRIPT:-prepare.sh}"
 DEPLOYMENT_FINISH_SCRIPT="${DEPLOYMENT_FINISH_SCRIPT:-finish.sh}"
@@ -256,31 +256,53 @@ bosh_update_runtime_or_cloud_config() {
     local force="${3}"
     local manifest="${4}"
 
-    local rvalue
+    local rvalue=0
     local output
     local name=$(basename "${path}")
     local varsdir="${path}/${DEPLOYMENT_VARS}"
     local bosh_varsfiles=()
+    local bosh_configfiles=()
     local varsenv=$(echo ${name^^} | tr '-' '_')
     local cmd=""
+    local configdir
+    local defaultmanifest
+    local manifestfullpath
+    local manifestfile
 
-    if [ "${kind}" == "runtime" ] && [ -z "${manifest}" ]
+    if [ -z "${manifest}" ] || [ ! -r "${manifest}" ]
     then
-        manifest="${path}/${DEPLOYMENT_RUNTIMEC}"
+        defaultmanifest=0
+        if [ "${kind}" == "runtime" ]
+        then
+            configdir="${path}/${DEPLOYMENT_RUNTIMEC}"
+        else
+            # cloud-config
+            configdir="${path}/${DEPLOYMENT_CLOUDC}"
+        fi
+        if [ ! -d "${configdir}" ]
+        then
+            echo_log "No ${kind} configuration. Ignoring!"
+            return 1
+        fi
+        while IFS=  read -r -d $'\0' line
+        do
+            bosh_configfiles+=("${line}")
+        done < <(find -L ${configdir} -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | sort -z)
+        if [ -n "${force}" ] && [ "${force}" == "1" ]
+        then
+            cmd="${BOSH_CLI} -n update-config --type=${kind} --vars-env=${varsenv}"
+        else
+            cmd="${BOSH_CLI} update-config --type=${kind} --vars-env=${varsenv}"
+        fi
     else
-        # cloud-config
-        manifest="${path}/${DEPLOYMENT_CLOUDC}"
-    fi
-    if [ ! -r "${manifest}" ]
-    then
-        echo_log "No ${kind} configuration. Ignoring!"
-        return 0
-    fi
-    if [ -n "${force}" ] && [ "${force}" == "1" ]
-    then
-        cmd="${BOSH_CLI} -n update-config --type=${kind} --name=${name} --vars-env=${varsenv}"
-    else
-        cmd="${BOSH_CLI} update-config --type=${kind} --name=${name} --vars-env=${varsenv}"
+        defaultmanifest=1
+        if [ -n "${force}" ] && [ "${force}" == "1" ]
+        then
+            cmd="${BOSH_CLI} -n update-${kind}-config --vars-env=${varsenv}"
+        else
+            cmd="${BOSH_CLI} update-${kind}-config --vars-env=${varsenv}"
+        fi
+        bosh_configfiles+=("${manifest}")
     fi
     # Load vars files
     if [ -n "${varsdir}" ] && [ -d "${varsdir}" ]
@@ -292,13 +314,21 @@ bosh_update_runtime_or_cloud_config() {
     fi
     # List of varsfiles with the proper path
     cmd="${cmd} ${bosh_varsfiles[@]/#/--vars-file }"
-    echo_log "RUN" "${cmd}"
-    exec 3>&1                     # Save the place that stdout (1) points to.
-    {
-        output="$(${cmd} 2>&1 1>&3)"
-        rvalue=$?
-    } 2> >(tee -a ${PROGRAM_LOG} >&2)
-    exec 3>&-                    # Close FD #3
+    for manifestfullpath in "${bosh_configfiles[@]}"
+    do
+        manifestfile=$(basename ${manifestfullpath})
+        localcmd="${cmd}"
+        [ "${defaultmanifest}" == "0" ] && localcmd="${localcmd} --name=${name}-${manifestfile%.*}"
+        localcmd="${localcmd} ${manifestfullpath}"
+        echo_log "RUN" "${localcmd}"
+        exec 3>&1                     # Save the place that stdout (1) points to.
+        {
+            output="$(${localcmd} 2>&1 1>&3)"
+            rvalue=$?
+        } 2> >(tee -a ${PROGRAM_LOG} >&2)
+        exec 3>&-                    # Close FD #3
+        [ ${rvalue} != 0 ] && break
+    done
     if [ ${rvalue} == 0 ]
     then
         echo_log "OK" "${kind} updated!"
@@ -383,11 +413,11 @@ bosh_deployment_manage() {
         bosh_manage_director "delete-env" "${deployment}" "${manifest}" "${force}" ${@}
         rvalue=$?
         ;;
-      cloud-config)
+      bosh-cloud-config|cloud-config)
         bosh_update_runtime_or_cloud_config "cloud" "${deployment}" "${force}"
         rvalue=$?
         ;;
-      runtime-config)
+      bosh-runtime-config|runtime-config)
         bosh_update_runtime_or_cloud_config "runtime" "${deployment}" "${force}"
         rvalue=$?
         ;;
@@ -1001,6 +1031,11 @@ then
             ;;
         interpolate|int|bosh-int|bosh-interpolate)
             bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "int" "${MANIFEST}"
+            RVALUE=$?
+            [ ${STDOUT} == 1 ] && cat "${MANIFEST}"
+            ;;
+        bosh-cloud-config|cloud-config|bosh-runtime-config|runtime-config)
+            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}"
             RVALUE=$?
             [ ${STDOUT} == 1 ] && cat "${MANIFEST}"
             ;;

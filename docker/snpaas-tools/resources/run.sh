@@ -8,6 +8,7 @@ shift
 echo "# Running snpaas cli version ${SNPAAS_VERSION}: $0 ${command} $*"
 
 SNPAAS_HOME=${SNPAAS_HOME:-/home/snpaas}
+export HOME=/home/${USER}
 
 # find datadir (if it is provided by a docker workdir)
 if workdir="$(git rev-parse --show-toplevel 2>/dev/null)"
@@ -68,15 +69,11 @@ case ${command} in
     echo
     exit 0
   ;;
-  bosh-*|create-env|delete-env|deploy|interpolate|int|destroy|-m|-p)
-    exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-deployment.sh ${command} ${@}
-  ;;
-  import-secrets|export-secrets|list-secrets|-p)
-    # ~/.credhub/config.json is created with restrictive permissions, running as user does not work
+  bosh-*|deploy|interpolate|int|destroy|create-env|delete-env|credhub-*|import-secrets|export-secrets|list-secrets|runtime-config|cloud-config|-m|-p)
     exec /usr/local/bin/manage-deployment.sh ${command} ${@}
   ;;
   cf-*)
-    exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-cf.sh ${command} ${@}
+    exec /usr/local/bin/manage-cf.sh ${command} ${@}
   ;;
   *)
     exec ${command} ${@}
