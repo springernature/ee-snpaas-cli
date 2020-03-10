@@ -68,7 +68,7 @@ case ${command} in
     echo
     exit 0
   ;;
-  bosh-*|deploy|interpolate|int|destroy|-m|-p)
+  bosh-*|create-env|delete-env|deploy|interpolate|int|destroy|-m|-p)
     exec su --preserve-environment --shell /bin/bash $SNPAAS_USER -- /usr/local/bin/manage-deployment.sh ${command} ${@}
   ;;
   import-secrets|export-secrets|list-secrets|-p)
