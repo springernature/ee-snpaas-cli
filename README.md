@@ -1,15 +1,21 @@
 # ee-snpaas-cli
 
+## Install
+```
+wget https://raw.githubusercontent.com/springernature/ee-snpaas-cli/master/snpaas -O snpaas && chmod a+x snpaas
+```
+
+## Don't want to install ...
+
 SNPaaS Command line program is based on Docker. This command is just a shell
-wrapper for docker to execute:
+wrapper for docker execute something like (plus a lot of variables):
 
 ```
-docker run --rm -v $(pwd):/data -it platformengineering/snpaas-tools "${@}"
+docker run --rm -v /home/$USER:/home/$USER -v $(pwd):/data -it platformengineering/snpaas-tools "${@}"
 ```
 
 There is a python version of this program, but it has some issues, so it is
 developed in the branch `python-cli` of this repo (the documentation is there).
-
 
 Potentially it should run on Windows by installing Docker client command line
 and delegating the execution to a box with docker daemon running (by defining
