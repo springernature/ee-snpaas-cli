@@ -50,8 +50,8 @@ Bosh/deployment subcommands
     delete-env      Destroy a Bosh Director
     deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
     destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
-    cloud-config    Apply cloud-config operations files from Director cloud-config
-    runtime-config  Apply runtime-config operations files from Director runtime-config
+    cloud-config    Apply cloud-config operations files prefixed with deployment name
+    runtime-config  Apply runtime-config operations files prefixed with deployment name
     import-secrets  Set secrets in Credhub from <deployment-folder>/$DEPLOYMENT_CREDS file
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
@@ -82,8 +82,10 @@ CloudFoundry subcommands (Please define CF_ environment variables!)
     │   ├── 20-operation2.yml -> ../<boshrelease1-git-submodule-folder>/manifest/operations/operation2.yml
     │   ├── 99-springer-nature-operation-custom.yml
     ├── secrets.yml
-    ├── runtime-config.yml
-    ├── cloud-config.yml
+    ├── runtime-config
+    │   ├── local-runtime-config-file-for-deployment.yml
+    ├── cloud-config
+    │   ├── local-cloud-config-file-for-deployment.yml
     └── variables
         ├── variables-custom1.yml
         ├── variables-custom1.yml
@@ -131,8 +133,11 @@ Given a deployment folder called 'app-logging' with this structure:
 
     app-logging
     ├── prepare.sh
-    ├── runtime-config.yml
-    ├── cloud-config.yml
+    ├── runtime-config
+    │   ├── dns.yml
+    │   └── mtail.yml
+    ├── cloud-config
+    │   └── vm_types.yml
     ├── operations
     │   ├── 00-base.yml -> ../cf-logging-boshrelease/manifest/logstash.yml
     │   ├── 20-cf-apps-es.yml -> ../cf-logging-boshrelease/manifest/operations/pipelines/cf-apps-es-throttling.yml
@@ -203,5 +208,7 @@ just copy the blue commands and execute them step by step.
 # Programs and versions installed
 
 Additionally you can directly execute all the following programs installed, just
-by typing then as argument.
+by typing then as argument, e.g:
+
+	snpaas credhub find -p '/director-name/'
 
