@@ -33,6 +33,7 @@ then
   then
       (
           cd ${BASE_FOLDER}
+          # . .envrc
           ./${PREPARE_SCRIPT} 2>&1 | awk '{ print "# "$0}'
           exit ${PIPESTATUS[0]}
       ) &
@@ -45,14 +46,12 @@ else
   BASE_FOLDER="$(pwd)"
 fi
 
+DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home/${USER} --user $(id -u):$(id -g)"
 if [ -n "${SSH_AUTH_SOCK}" ]
 then
   # SSH agent socket in order to get working with github
   # THIS ONLY WORKS ON LINUX
-  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(readlink ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
-else
-  # Export all user home as ro to get ssh keys
-  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home:ro --user $(id -u):$(id -g)"
+  DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v $(realpath ${SSH_AUTH_SOCK}):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
 if [ -x "$(command -v docker)" ]
@@ -65,8 +64,9 @@ then
   done
   exec docker run ${DOCKER_CMD_ARGS} -v ${BASE_FOLDER}:/data -it "${DOCKER_IMAGE}" "${@}"
 else
-  # . .envrc
+  echo "Loading .envrc variables ..."
+  . .envrc
   # exec ${CMD}
-  echo "Please install docker in order to use this program!"
+  echo "Please install docker in order to use this program!, otherwise you can try to use the clients with the environment variables defined. "
   exit 1
 fi
