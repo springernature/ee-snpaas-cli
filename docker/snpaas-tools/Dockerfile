@@ -7,7 +7,7 @@ FROM debian:10.2-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=2.6
+ARG VERSION=3.0
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
@@ -102,6 +102,21 @@ RUN set -xe                                                                 && \
         wget \
         gnupg \
         pwgen \
+    # Packages needed for create-env (deploy bosh)
+        make \
+        build-essential \
+        zlibc \
+        zlib1g-dev \
+        ruby \
+        ruby-dev \
+        libxslt1-dev \
+        libxml2-dev \
+        libssl-dev \
+        libreadline7 \
+        libreadline-dev \
+        libyaml-dev \
+        libsqlite3-dev \
+        sqlite3 \
                                                                             && \
     # Timezone
     cp "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime                     && \
