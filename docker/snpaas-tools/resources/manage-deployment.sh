@@ -522,9 +522,7 @@ bosh_manage_director() {
     echo_log "RUN" "${cmd} ${args}"
     exec 3>&1                     # Save the place that stdout (1) points to.
     {
-        # output=$(${cmd} ${args} 2>&1 1>&3)
-        output="echo hola"
-        true
+        output=$(${cmd} ${args} 2>&1 1>&3)
         rvalue=$?
     } 2> >(tee -a ${PROGRAM_LOG} >&2)
     exec 3>&-                    # Close FD #3
