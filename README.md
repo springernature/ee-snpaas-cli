@@ -321,7 +321,7 @@ Additionally you can directly execute all the following programs installed, just
 by typing then as argument, e.g:
 
 	snpaas credhub find -p '/director-name/'
-
+```
 
 # Author
 
