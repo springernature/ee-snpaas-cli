@@ -18,7 +18,13 @@ DEPLOYMENT_VARS="${DEPLOYMENT_VARS:-variables}"
 DEPLOYMENT_VARS_FILE="${DEPLOYMENT_VARS_FILE:-var-files.yml}"
 DEPLOYMENT_RUNTIMEC="${DEPLOYMENT_RUNTIMEC:-runtime-config}"
 DEPLOYMENT_CLOUDC="${DEPLOYMENT_CLOUDC:-cloud-config}"
+# Next file are only used when deployed a Director
+DEPLOYMENT_DEFAULT_RUNTIMEC="${DEPLOYMENT_DEFAULT_RUNTIMEC:-runtime-config.yml}"
+DEPLOYMENT_DEFAULT_CLOUDC="${DEPLOYMENT_DEFAULT_CLOUDC:-cloud-config.yml}"
+# This is setup to de name of the deployment, the idea is define env vars
+# used in the interpolation process
 DEPLOYMENT_NAME_VAR="${DEPLOYMENT_NAME_VAR:-deployment_name}"
+# Pre/Post scripts
 DEPLOYMENT_PREPARE_SCRIPT="${DEPLOYMENT_PREPARE_SCRIPT:-prepare.sh}"
 DEPLOYMENT_FINISH_SCRIPT="${DEPLOYMENT_FINISH_SCRIPT:-finish.sh}"
 
@@ -294,6 +300,7 @@ bosh_update_runtime_or_cloud_config() {
         else
             cmd="${BOSH_CLI} update-config --type=${kind} --vars-env=${varsenv}"
         fi
+        echo_log "INFO" "Updating ${kind} config with files from ${configdir} ..."
     else
         defaultmanifest=1
         if [ -n "${force}" ] && [ "${force}" == "1" ]
@@ -303,6 +310,7 @@ bosh_update_runtime_or_cloud_config() {
             cmd="${BOSH_CLI} update-${kind}-config --vars-env=${varsenv}"
         fi
         bosh_configfiles+=("${manifest}")
+        echo_log "INFO" "Updating DEFAULT ${kind} config ..."
     fi
     # Load vars files
     if [ -n "${varsdir}" ] && [ -d "${varsdir}" ]
@@ -513,13 +521,15 @@ bosh_manage_director() {
 
     local cmd
     local output
-    local rvalue
+    local rvalue=0
     local base=""
     local state="${deployment}/${DEPLOYMENT_STATE}"
     local secrets="${deployment}/${DEPLOYMENT_CREDS}"
     local operations="${deployment}/${DEPLOYMENT_OPERATIONS}"
     local varsdir="${deployment}/${DEPLOYMENT_VARS}"
     local varfiles="${deployment}/${DEPLOYMENT_VARS_FILE}"
+    local default_runtimec="${deployment}/${DEPLOYMENT_DEFAULT_RUNTIMEC}"
+    local default_cloudc="${deployment}/${DEPLOYMENT_DEFAULT_CLOUDC}"
     local varsenv=$(basename "${deployment}")
 
     if [ ! -d "${deployment}" ]
@@ -561,6 +571,20 @@ bosh_manage_director() {
         echo_log "OK" "Bosh deployed"
     else
         echo_log "ERROR" ${output}
+    fi
+    # Manage DEFAULT runtime and cloud configs
+    if [ ${rvalue} == 0 ] && [ "${action}" == "create-env" ]
+    then
+        if [ -r "${default_runtimec}" ]
+        then
+            bosh_update_runtime_or_cloud_config "runtime" "${deployment}" "${force}" "${default_runtimec}"
+            rvalue=$?
+        fi
+        if  [ -r "${default_cloudc}" ] &&  [ ${rvalue} == 0 ]
+        then
+            bosh_update_runtime_or_cloud_config "cloud" "${deployment}" "${force}" "${default_cloudc}"
+            rvalue=$?
+        fi
     fi
     return ${rvalue}
 }
