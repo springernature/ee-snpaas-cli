@@ -183,6 +183,8 @@ CloudFoundry subcommands (Please define CF_ environment variables!)
     ├── <boshrelease2-git-submodule-folder>
     ├── ...
     ├── [state.json]
+    ├── [cloud-config.yml]
+    ├── [runtime-config.yml]
     ├── var-files.yml
     ├── prepare.sh
     ├── finish.sh
@@ -235,13 +237,17 @@ and make sure there is no operations folder there. The first yaml file (in lexic
 order) will be taken as manifest and deployed, so make sure you call the manifest
 file properly (secrets.yml is always ignored, so do not worry about it).
 
-When deploying a Bosh-director, a state file 'state.json' will be created.
+
+When deploying a Bosh Director, a state file 'state.json' will be created and
+the DEFAULT cloud-config and runtime-config (name=default!) will be applied AUTOMATICALLY
+if the deployment was successfully done.
 
 # Usage examples
 
-Given a deployment folder called 'app-logging' with this structure:
+Given a typical deployment folder called 'app-logging' with this structure:
 
     app-logging
+    ├── cf-logging-boshrelease
     ├── prepare.sh
     ├── runtime-config
     │   ├── dns.yml
@@ -264,6 +270,10 @@ Given a deployment folder called 'app-logging' with this structure:
         ├── iaas.yml
         ├── throttle-param.yml
         └── vars-release-version.yml -> ../cf-logging-boshrelease/manifest/vars-release-version.yml
+
+
+In the above structure 'cf-logging-boshrelease' is a git submodule. The idea is reuse
+resources from there (normally operations files).
 
 
 * To deploy or update the deployment called 'app-logging', execute: 'deploy app-logging'.
