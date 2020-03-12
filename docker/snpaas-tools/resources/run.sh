@@ -8,7 +8,13 @@ shift
 echo "# Running snpaas cli version ${SNPAAS_VERSION}: $0 ${command} $*"
 
 SNPAAS_HOME=${SNPAAS_HOME:-/home/snpaas}
-export HOME=/home/${USER}
+HOME="/home/${USER}"
+if [ ! -d "${HOME}" ]
+then
+    # Home not mounted!
+    HOME="${SNPAAS_HOME}"
+fi
+export HOME
 
 # find datadir (if it is provided by a docker workdir)
 if workdir="$(git rev-parse --show-toplevel 2>/dev/null)"
