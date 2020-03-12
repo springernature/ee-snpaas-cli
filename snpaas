@@ -63,16 +63,20 @@ else
   BASE_FOLDER="$(pwd)"
 fi
 
-DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} --user $(id -u):$(id -g)"
 if [ "x${EPHEMERAL_HOME}" == "x0" ]
 then
   case "$(uname -s)" in
     Linux*)
-      DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home/${USER}";;
+        DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} --user $(id -u):$(id -g)"
+        DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} -v ${HOME}:/home/${USER}"
+      ;;
     Darwin*)
-      echo "# Mac OSX, not mounting /Users because of bugs, no caching for create-env commands!";;
+        DOCKER_CMD_ARGS="${DOCKER_CMD_ARGS} --user snpaas"
+        # Mac OSX, not mounting /Users because of bugs, no caching for create-env commands!
+      ;;
     *)
-      echo "# Unknown OS, not mounting home, no caching for create-env commands!";;
+        echo "# Unknown OS, not mounting home, no user mapping, no caching for create-env commands!"
+      ;;
   esac
 fi
 
