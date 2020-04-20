@@ -88,7 +88,7 @@ cfrun() {
         if [ -n "${CF_USER}" ] && [ -n "${CF_PASSWORD}" ] && [ -n "${CF_API}" ]
         then
             ${CF_CLI} logout
-            ${CF_CLI} login -a "$CF_API" -u "$CF_USER" -p "$CF_PASSWORD" -o "system" -s "system"
+            ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "system" -s "system"
         else
             echo_log "ERROR" "Cannot logon in CloudFoundry, plese check environment variables"
             usage
@@ -135,6 +135,10 @@ then
             ;;
         disk|cf-disk)
             cfrun report-disk-usage --quiet
+            RVALUE=$?
+            ;;
+        docker|dockers|cf-docker)
+            cfrun docker-usage
             RVALUE=$?
             ;;
         mem|cf-mem)
