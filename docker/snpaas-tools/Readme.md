@@ -45,11 +45,14 @@ Subcommands:
 
 Bosh/deployment subcommands
 
-    interpolate     Create the manifest for an environment
-    create-en       Deploy a Bosh Director
+    interpolate [bosh-int-parameters]
+                    Create the manifest for an environment
+    create-env      Deploy a Bosh Director
     delete-env      Destroy a Bosh Director
-    deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
-    destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
+    deploy [-f] [bosh-deploy-paramereters] 
+                    Update or upgrade deployment after applying cloud/runtime configs
+    destroy [-f] [bosh-destroy-parameters]
+                    Delete deployment (does not delete cloud/runtime configs)
     cloud-config    Apply cloud-config operations files prefixed with deployment name
     runtime-config  Apply runtime-config operations files prefixed with deployment name
     import-secrets  Set secrets in Credhub from <deployment-folder>/$DEPLOYMENT_CREDS file

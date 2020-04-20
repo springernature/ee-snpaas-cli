@@ -1043,18 +1043,16 @@ then
                 case ${optsub} in
                     f)
                         FORCE=1
-                        ;;
-                    \?)
-                        die "Invalid Option: -$OPTARG"
+                        shift
                         ;;
                 esac
             done
-            shift $((OPTIND -1))
-            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}" "${FORCE}"
+            #shift $((OPTIND -1))
+            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}" "${FORCE}" $@
             RVALUE=$?
             ;;
         interpolate|int|bosh-int|bosh-interpolate)
-            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "int" "${MANIFEST}"
+            bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "int" "${MANIFEST}" $@
             RVALUE=$?
             [ ${STDOUT} == 1 ] && cat "${MANIFEST}"
             ;;
@@ -1070,16 +1068,14 @@ then
                 case ${optsub} in
                     f)
                         FORCE=1
-                        ;;
-                    \?)
-                        die "Invalid Option: -$OPTARG"
+                        shift
                         ;;
                 esac
             done
-            shift $((OPTIND -1))
+            #shift $((OPTIND -1))
             if [ ${FORCE} == 1 ]
             then
-                bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}" "${FORCE}"
+                bosh_deployment_manage "${DEPLOYMENT_FOLDER}" "${SUBCOMMAND}" "${MANIFEST}" "${FORCE}" $@
                 RVALUE=$?
             else
                 echo_log "Destroy an deployment requires a bit more force"
