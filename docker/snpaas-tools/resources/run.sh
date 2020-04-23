@@ -58,8 +58,6 @@ then
     then
         echo "# Loading .envrc"
         . .envrc
-    else
-        echo "# No '.envrc' file found in current folder!"
     fi
 fi
 
@@ -74,6 +72,9 @@ case ${command} in
     done
     echo
     exit 0
+  ;;
+  bosh-agent-certificates|agent-certificates|check-agent-certificates)
+    exec /usr/local/bin/check-bosh-agent-certificates.sh ${@}
   ;;
   bosh-*|deploy|interpolate|int|destroy|create-env|delete-env|credhub-*|import-secrets|export-secrets|list-secrets|runtime-config|cloud-config|-m|-p)
     exec /usr/local/bin/manage-deployment.sh ${command} ${@}

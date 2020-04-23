@@ -58,6 +58,11 @@ Bosh/deployment subcommands
     import-secrets  Set secrets in Credhub from <deployment-folder>/$DEPLOYMENT_CREDS file
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
+    agent-certificates
+                    Scan Bosh vms of a deployment (if provided as argument, otherwise it
+                    will scan all vms) looking for Bosh Agent certificates, warning those
+                    vms with certificates about to expire. Helps finding VMs which need to
+                    be recreated when rotating Bosh Agent certificates.
 
 CloudFoundry subcommands (Please define CF_ environment variables!)
 
