@@ -2,6 +2,9 @@
 set -eo pipefail
 shopt -s nullglob
 
+# Please wrap all output with # in the begining. The idea is be able to pipe commands in a shell
+# with something like grep -v '^#'
+
 command=$1
 shift
 
@@ -48,6 +51,14 @@ then
     popd > /dev/null
 else
     echo "# No '.envrc' file found in the repository root!"
+fi
+
+if [ "${1}" == "." ]
+then
+    # Change . for current folder name and go to parent
+    shift
+    set -- "$(basename $(pwd))" ${@}
+    cd ..
 fi
 
 # Load .envrc file in current folder
