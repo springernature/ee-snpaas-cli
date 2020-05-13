@@ -31,19 +31,23 @@ in your environment, then Bosh-cli, Credhub-cli and CF-cli will automatically lo
 
 Then you are ready to manage to manage deployments, with this subcommands and options:
 
-    <subcommand> <folder> [options]
+    [main-options] <subcommand> [subcommand-options] <folder-deployment-name> [other-specific-subcommand-args]
 
-Options:
+Main-options:
+
+    -h --help  Shows this help
+    --noenv    Do not load .envrc files
+
+Subcommand-Options:
 
     -m      Specify a manifest file, instead of generating a random one
     -p      Deployments path. Default is $DEPLOYMENTS_PATH
-    -h      Shows usage help
 
 Subcommands:
 
-    help            Shows usage help
+    help            Shows this usage help
 
-Bosh/deployment subcommands
+  Bosh/deployment subcommands
 
     interpolate [bosh-int-parameters]
                     Create the manifest for an environment
@@ -64,7 +68,7 @@ Bosh/deployment subcommands
                     vms with certificates about to expire. Helps finding VMs which need to
                     be recreated when rotating Bosh Agent certificates.
 
-CloudFoundry subcommands (Please define CF_ environment variables!)
+  CloudFoundry subcommands (Please define CF_ environment variables!)
 
     cf-top                  top like command for Cloudfoundry
     cf-disk                 Full disk usage report
