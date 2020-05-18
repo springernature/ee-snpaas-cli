@@ -74,10 +74,20 @@ Subcommands:
     cf-disk                 Full disk usage report
     cf-mem                  Memory usage report
     cf-users                List users and roles
+    cf-usage                Show usage
     cf-docker               List docker images
     cf-app-stats <app>      Graphical application stats
     cf-mysql <service>      Connect with a mysql database to perform commands
     cf-route-lookup <route> CF route lookup
+
+  You can type any other (interactive) commands
+
+    bosh
+    cf
+    terraform
+    bash
+    ...
+
 
 # Folder structure:
 

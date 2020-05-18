@@ -79,7 +79,8 @@ cf_system_check() {
     return 0
 }
 
-cfrun() {
+
+cfenv() {
     local target=""
     local rvalue=0
 
@@ -87,11 +88,59 @@ cfrun() {
     then
         if [ -n "${CF_USER}" ] && [ -n "${CF_PASSWORD}" ] && [ -n "${CF_API}" ]
         then
-            ${CF_CLI} logout
-            ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "system" -s "system"
+            ${CF_CLI} logout > /dev/null 2>&1
+            if ! ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "system" -s "system" > /dev/null 2>&1
+            then
+                echo_log "ERROR" "Cannot login in CF with the provided environment variables"
+                return 1
+            fi
         else
-            echo_log "ERROR" "Cannot logon in CloudFoundry, plese check environment variables"
-            usage
+            echo_log "ERROR" "Cannot login in CloudFoundry, please define/check environment variables"
+            return 1
+        fi
+    fi
+    [ -n "${CF_ORG}" ] && target="-o ${CF_ORG}"
+    [ -n "${CF_SPACE}" ] && target="${target} -s ${CF_SPACE}"
+    if [ -n "${target}" ]
+    then
+        if ! ${CF_CLI} target ${target} > /dev/null 2>&1
+        then
+            echo_log "ERROR" "Cannot target ORG/Space:  ${CF_ORG}/${CF_SPACE}"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+
+cfrun() {
+    local rvalue=1
+
+    if cfenv
+    then
+        ${CF_CLI} $@
+        rvalue=$?
+    fi
+    return ${rvalue}
+}
+
+
+cfexec() {
+    local target=""
+    local rvalue=0
+
+    if ! ${CF_CLI} oauth-token > /dev/null 2>&1
+    then
+        if [ -n "${CF_USER}" ] && [ -n "${CF_PASSWORD}" ] && [ -n "${CF_API}" ]
+        then
+            ${CF_CLI} logout > /dev/null 2>&1
+            if ! ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "system" -s "system" > /dev/null 2>&1
+            then
+                echo_log "ERROR" "Cannot login in CF with the provided environment variables"
+                return 1
+            fi
+        else
+            echo_log "ERROR" "Cannot login in CloudFoundry, please define/check environment variables"
             return 1
         fi
     fi
@@ -120,9 +169,15 @@ cfrun() {
 if [ "$0" == "${BASH_SOURCE[0]}" ]
 then
     RVALUE=1
-    echo_log "Running '$0 $*' logging to '$(basename ${PROGRAM_LOG})'"
     SUBCOMMAND=$1
     shift  # Remove 'subcommand' from the argument list
+    if [ "${SUBCOMMAND}" == "cf" ]
+    then
+        # Just execute silently and exit
+        cfrun $@
+        exit $?
+    fi
+    echo_log "Running '$0 $*' logging to '$(basename ${PROGRAM_LOG})'"
     case "${SUBCOMMAND}" in
         # Parse options to each sub command
         cf-help|help)
@@ -130,23 +185,27 @@ then
             exit 0
             ;;
         top|cf-top)
-            cfrun top
+            cfexec top
             RVALUE=$?
             ;;
         disk|cf-disk)
-            cfrun report-disk-usage --quiet
+            cfexec report-disk-usage --quiet
             RVALUE=$?
             ;;
         docker|dockers|cf-docker)
-            cfrun docker-usage
+            cfexec docker-usage
             RVALUE=$?
             ;;
         mem|cf-mem)
-            cfrun report-memory-usage --quiet
+            cfexec report-memory-usage --quiet
             RVALUE=$?
             ;;
         users|cf-users)
-            cfrun report-users --quiet
+            cfexec report-users --quiet
+            RVALUE=$?
+            ;;
+        usage|cf-usage)
+            cfexec usage-report
             RVALUE=$?
             ;;
         app-stats|cf-app-stats)
@@ -156,7 +215,7 @@ then
                 then
                     echo_log "Application stats requires a define the CF_ORG and CF_SPACE env vars!"
                 else
-                    cfrun statistics $1
+                    cfexec statistics $1
                     RVALUE=$?
                 fi
             else
@@ -170,7 +229,7 @@ then
                 then
                     echo_log "Mysql requires a define the CF_ORG and CF_SPACE env vars!"
                 else
-                    cfrun mysql $1
+                    cfexec mysql $1
                     RVALUE=$?
                 fi
             else
@@ -180,15 +239,11 @@ then
         route-lookup|cf-route-lookup)
             if [ -z "${1}" ]
             then
-                cfrun lookup-route $1
+                cfexec lookup-route $1
                 RVALUE=$?
             else
                 echo_log "Searching a route requires an extra argument, the route!"
             fi
-            ;;
-        *)
-            cfrun $SUBCOMMAND $@
-            RVALUE=$?
             ;;
     esac
     if [ ${RVALUE} == 0 ]
@@ -200,5 +255,6 @@ then
     exit ${RVALUE}
 else
     cf_system_check "$(pwd)"
+    cfenv
 fi
 

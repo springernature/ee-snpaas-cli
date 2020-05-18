@@ -103,7 +103,7 @@ case ${command} in
   bosh-*|deploy|interpolate|int|destroy|create-env|delete-env|credhub-*|import-secrets|export-secrets|list-secrets|runtime-config|cloud-config|-m|-p)
     exec /usr/local/bin/manage-deployment.sh ${command} ${@}
   ;;
-  cf-*)
+  cf-*|cf)
     exec /usr/local/bin/manage-cf.sh ${command} ${@}
   ;;
   *)
