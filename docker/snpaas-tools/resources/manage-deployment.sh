@@ -9,7 +9,8 @@ PROGRAM_OPTS=$@
 
 BOSH_CLI=${BOSH_CLI:-bosh}
 BOSH_EXTRA_OPS="--tty --no-color"
-CREDHUB_CLI=${CREDHUB_CLI:-"credhub"}
+CREDHUB_CLI=${CREDHUB_CLI:-credhub}
+YQ=${YQ:-yq}
 
 DEPLOYMENT_STATE="${DEPLOYMENT_STATE:-state.json}"
 DEPLOYMENT_CREDS="${DEPLOYMENT_CREDS:-secrets.yml}"
@@ -274,6 +275,7 @@ bosh_update_runtime_or_cloud_config() {
     local defaultmanifest
     local manifestfullpath
     local manifestfile
+    local release
 
     if [ -z "${manifest}" ] || [ ! -r "${manifest}" ]
     then
@@ -337,6 +339,25 @@ bosh_update_runtime_or_cloud_config() {
         exec 3>&-                    # Close FD #3
         [ ${rvalue} != 0 ] && break
     done
+    if [ ${rvalue} == 0 ] && [ "${kind}" == "runtime" ]
+    then
+        echo_log "INFO" "Updating/uploading runtime-config bosh releases ..."
+        for manifestfullpath in "${bosh_configfiles[@]}"
+        do
+            for release in $(${YQ} read ${manifestfullpath} 'releases[*].url')
+            do
+                localcmd="${BOSH_CLI} upload-release ${release}"
+                echo_log "RUN" "${localcmd}"
+                exec 3>&1                     # Save the place that stdout (1) points to.
+                {
+                    output="$(${localcmd} 2>&1 1>&3)"
+                    rvalue=$?
+                } 2> >(tee -a ${PROGRAM_LOG} >&2)
+                exec 3>&-                    # Close FD #3
+                [ ${rvalue} != 0 ] && break
+            done
+        done
+    fi
     if [ ${rvalue} == 0 ]
     then
         echo_log "OK" "${kind} updated!"
