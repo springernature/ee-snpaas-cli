@@ -7,7 +7,7 @@ FROM debian:10.4-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=3.10
+ARG VERSION=3.11
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
@@ -186,7 +186,8 @@ RUN set -xe                                                                 && \
     cf install-plugin -f -r CF-Community "docker-usage"                     && \
     cf install-plugin -f -r CF-Community "Buildpack Management"             && \
     cf install-plugin -f -r CF-Community "Statistics"                       && \
-    chown -R ${USER}:${USER} ${HOME} $SNPAAS_CF6_PLUGINS
+    chown -R ${USER}:${USER} ${HOME} $SNPAAS_CF6_PLUGINS                    && \
+    chmod -R a+rx $SNPAAS_CF6_PLUGINS
 
 COPY Readme.md /
 COPY resources/*.sh /usr/local/bin/
