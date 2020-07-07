@@ -5,9 +5,11 @@ set -e
 
 ##
 
-DOCKER_BASE_TAG="platformengineering"
-
-DOCKER=docker
+DOCKER_BASE_TAG=${DOCKER_BASE_TAG-platformengineering}
+# build --squash is an experimental feature, you would need to enable the experimental
+# feature in docker daemon https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
+DOCKER_BUILD_ARGS=${DOCKER_BUILD_ARGS---squash}
+DOCKER=${DOCKER:-docker}
 
 ###
 
@@ -39,7 +41,7 @@ do
       VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' Dockerfile)
 
       echo "* Building Docker image with tag $NAME:$VERSION ..."
-      $DOCKER build . -t $NAME
+      $DOCKER build $DOCKER_BUILD_ARGS . -t $NAME
       $DOCKER tag $NAME $TAG
 
       # Uploading docker image
