@@ -503,6 +503,8 @@ bosh_destroy() {
     local rvalue
     local director_uuid
     local director_name
+    local credentials
+    local credential
     
     director_name=$(bosh_director_name 2>&1)
     rvalue=$?
@@ -525,6 +527,24 @@ bosh_destroy() {
         echo_log "OK" "Deployment deleted"
     else
         echo_log "ERROR" "${output}"
+        return ${rvalue}
+    fi
+    echo_log "INFO" "Deleting deployment secrets in credhub ..."
+    credentials=$(${CREDHUB_CLI} find -j -p "/${director_name}/${deployment}" | ${JQ} -r .credentials[].name)
+    rvalue=$?
+    if [ -z "${credentials}" ]
+    then
+        echo_log "INFO" "No credentials found in credhub"
+    fi
+    if [ ${rvalue} == 0 ] && [ -n "${credentials}" ]
+    then
+        for credential in ${credentials}
+        do
+            echo_log "RUN" "${CREDHUB_CLI} delete -n '${credential}'"
+            ${CREDHUB_CLI} delete -n "${credential}" >> ${PROGRAM_LOG} 2>&1
+        done
+    else
+        echo_log "ERROR" "Cannot delete credentials in Credhub"
     fi
     return ${rvalue}
 }
