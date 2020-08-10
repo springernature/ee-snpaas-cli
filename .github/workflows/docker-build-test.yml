@@ -1,5 +1,5 @@
 # This is a basic workflow to help you get started with Actions
-name: docker-build
+name: docker-build-test
 
 on:
   push:
@@ -38,4 +38,12 @@ jobs:
         run: |
             cd ${{ steps.vars.outputs.pwd }}
             docker build . --file Dockerfile --tag $IMAGE_TAG
+
+  run-test:
+    name: Run Test
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run help
+        run: DOCKER_IMAGE=$IMAGE_TAG ./snpaas
 
