@@ -26,21 +26,30 @@ jobs:
             echo ::set-env name=TAG::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
             echo ::set-env name=BUILDDIR::$(echo ${DOCKER_BUILD_DIR})
             echo ::set-env name=VERSION::$(echo ${VERSION})
+            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
             echo ::set-output name=version::$(echo ${VERSION})
             echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
 
-      - name: Build the tagged Docker image
-        run: |
-            echo "Building Docker image with tag $TAG:$VERSION ..."
-            docker build --file $BUILDDIR/Dockerfile --tag $NAME $BUILDDIR
-            docker tag $NAME $TAG:$VERSION
-
       - name: Build the latest Docker image
         run: |
-            docker build --file $BUILDDIR/Dockerfile --tag $TAG $BUILDDIR
+            docker build --file $BUILDDIR/Dockerfile --tag $NAME $BUILDDIR
+            docker tag $NAME $TAG:$VERSION
 
       - name: Output
         run: |
             DOCKER_IMAGE=$NAME TTY= ./snpaas
+
+      - name: Push to GitHub Packages
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: springernature/ee-snpaas-cli/${{steps.docker.outputs.name}}
+          path: ${{steps.docker.outputs.builddir}}
+          dockerfile: ${{steps.docker.outputs.builddir}}/Dockerfile
+          add_git_labels: true
+          tag_with_ref: true
 
 
