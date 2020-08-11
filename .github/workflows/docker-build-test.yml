@@ -37,7 +37,6 @@ jobs:
 
       - name: Build the latest Docker image
         run: |
-            cd $BUILD
             docker build --file $BUILDDIR/Dockerfile --tag $TAG $BUILDDIR
 
       - name: Output
