@@ -31,17 +31,17 @@ jobs:
 
       - name: Build the tagged Docker image
         run: |
-            echo "Building Docker image with tag $IMAGE_TAG:$IMAGE_VERSION ..."
-            docker build $BUILDDIR --file Dockerfile -t $IMAGE_NAME
-            docker tag $IMAGE_NAME $IMAGE_TAG:$IMAGE_VERSION
+            echo "Building Docker image with tag $TAG:$VERSION ..."
+            docker build $BUILDDIR --file Dockerfile -t $NAME
+            docker tag $NAME $TAG:$VERSION
 
       - name: Build the latest Docker image
         run: |
             cd $BUILD
-            docker build $BUILDDIR --file Dockerfile --tag $IMAGE_TAG
+            docker build $BUILDDIR --file Dockerfile --tag $TAG
 
       - name: Output
         run: |
-            DOCKER_IMAGE=$IMAGE_NAME TTY= ./snpaas
+            DOCKER_IMAGE=$NAME TTY= ./snpaas
 
 
