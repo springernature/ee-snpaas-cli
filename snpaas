@@ -31,6 +31,7 @@ GCP_ENVVARS="GCP_PROJECT GCP_ZONE GCP_REGION"
 SYSTEM_ENVVARS="USER GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_SSH_COMMAND"
 # Force to not mound /home/user
 EPHEMERAL_HOME="${EPHEMERAL_HOME:-0}"
+TTY="${TTY--t}"
 
 # You can define extra envvars to pass to the container just with this env var
 EXTRA_ENVVARS="${EXTRA_ENVVARS:-}"
@@ -95,7 +96,7 @@ then
   do
     [ -z "${var}" ] || DOCKER_CMD_ARGS="--env ${var} ${DOCKER_CMD_ARGS}"
   done
-  exec docker run ${DOCKER_CMD_ARGS} -v ${BASE_FOLDER}:/data -it "${DOCKER_IMAGE}" "${@}"
+  exec docker run ${DOCKER_CMD_ARGS} -v ${BASE_FOLDER}:/data -i ${TTY} "${DOCKER_IMAGE}" "${@}"
 else
   echo "Loading .envrc variables ..."
   . .envrc
