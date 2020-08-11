@@ -32,13 +32,13 @@ jobs:
       - name: Build the tagged Docker image
         run: |
             echo "Building Docker image with tag $TAG:$VERSION ..."
-            docker build $BUILDDIR --file Dockerfile -t $NAME
+            docker build --file $BUILDDIR/Dockerfile --tag $NAME $BUILDDIR
             docker tag $NAME $TAG:$VERSION
 
       - name: Build the latest Docker image
         run: |
             cd $BUILD
-            docker build $BUILDDIR --file Dockerfile --tag $TAG
+            docker build --file $BUILDDIR/Dockerfile --tag $TAG $BUILDDIR
 
       - name: Output
         run: |
