@@ -1,5 +1,4 @@
-# This is a basic workflow to help you get started with Actions
-name: docker-build-commit
+name: Docker Build
 
 on:
   push:
@@ -11,36 +10,35 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     steps:
-      # Get the repositery's code
-      - name: Checkout git repository
-        uses: actions/checkout@v2
-
-      - name: Sets docker build variables
-        id: vars
+      - name: Set docker build variables
+        id: docker
         env:
           DOCKER_IMAGE_REPO: platformengineering
-          DOCKER_IMAGE_NAME: snpaas-tools 
+          DOCKER_IMAGE_NAME: snpaas-tools
+          DOCKER_BUILD_DIR: docker/snpaas-tools
         run: |
-            cd docker/${DOCKER_IMAGE_NAME}
-            echo ::set-output name=pwd::$(pwd)
-            echo ::set-env name=IMAGE_NAME::$(echo ${DOCKER_IMAGE_NAME})
-            echo ::set-env name=IMAGE_REPO::$(echo ${DOCKER_IMAGE_REPO})
-            echo ::set-env name=IMAGE_TAG::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
-            echo ::set-env name=IMAGE_VERSION::$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' Dockerfile)
+            VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
+            echo ::set-env name=NAME::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-env name=REPO::$(echo ${DOCKER_IMAGE_REPO})
+            echo ::set-env name=TAG::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+            echo ::set-env name=BUILDDIR::$(echo ${DOCKER_BUILD_DIR})
+            echo ::set-env name=VERSION::$(echo ${VERSION})
+            echo ::set-output name=version::$(echo ${VERSION})
+            echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
 
       - name: Build the tagged Docker image
         run: |
-            cd ${{ steps.vars.outputs.pwd }}
             echo "Building Docker image with tag $IMAGE_TAG:$IMAGE_VERSION ..."
-            docker build . --file Dockerfile -t $IMAGE_NAME
+            docker build $BUILDDIR --file Dockerfile -t $IMAGE_NAME
             docker tag $IMAGE_NAME $IMAGE_TAG:$IMAGE_VERSION
 
       - name: Build the latest Docker image
         run: |
-            cd ${{ steps.vars.outputs.pwd }}
-            docker build . --file Dockerfile --tag $IMAGE_TAG
+            cd $BUILD
+            docker build $BUILDDIR --file Dockerfile --tag $IMAGE_TAG
 
-      - name: Run help
+      - name: Output
         run: |
-            DOCKER_IMAGE=$IMAGE_NAME ./snpaas
+            DOCKER_IMAGE=$IMAGE_NAME TTY= ./snpaas
+
 
