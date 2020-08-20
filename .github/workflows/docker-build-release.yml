@@ -1,0 +1,100 @@
+# When a commit is pushed with text matching v*, i.e. v1.0, v20.15.10, creates a new release
+name: Docker Build and Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.docker.outputs.version }}
+      name: ${{ steps.docker.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set docker build variables
+        id: docker
+        env:
+          DOCKER_IMAGE_REPO: platformengineering
+          DOCKER_IMAGE_NAME: snpaas-tools
+          DOCKER_BUILD_DIR: docker/snpaas-tools
+        run: |
+            VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
+            echo ::set-env name=NAME::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-env name=REPO::$(echo ${DOCKER_IMAGE_REPO})
+            echo ::set-env name=TAG::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+            echo ::set-env name=BUILDDIR::$(echo ${DOCKER_BUILD_DIR})
+            echo ::set-env name=VERSION::$(echo ${VERSION})
+            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
+            echo ::set-output name=version::$(echo ${VERSION})
+            echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+
+      - name: Build the latest Docker image
+        run: |
+            docker build --file $BUILDDIR/Dockerfile --tag $NAME $BUILDDIR
+
+      - name: Show Output
+        run: |
+            DOCKER_IMAGE=$NAME TTY= ./snpaas
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: springernature/ee-snpaas-cli/${{steps.docker.outputs.name}}
+          path: ${{steps.docker.outputs.builddir}}
+          dockerfile: ${{steps.docker.outputs.builddir}}/Dockerfile
+          add_git_labels: true
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set release variables
+        id: release
+        env:
+          RELEASE: snpaas-cli
+          TITLE: "SNPaaS client"
+        run: |
+            prevtag=$(git describe --abbrev=0 --tags)
+            changes=$(git log --pretty="%h %aI %s (%an)" $prevtag..@ | sed 's/^/- /')
+            description=$(cat <<EOF
+            # $RELEASE version ${{needs.build.outputs.version}}
+            
+            $TITLE
+            
+            ## Changes since last version
+            
+            $changes
+            
+            EOF
+            )
+            echo ::set-output name=description::$(echo ${description})
+            echo ::set-output name=release::$(echo ${RELEASE})
+            echo ::set-output name=name::$(echo ${TITLE} version ${{needs.build.outputs.version}})
+            echo ::set-output name=tag::$(echo v${{needs.build.outputs.version}})
+ 
+      - name: Create Release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{steps.release.outputs.tag}}
+          release_name: ${{steps.release.outputs.name}}
+          body: ${{steps.release.outputs.description}}
+          draft: false
+          prerelease: false
+
