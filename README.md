@@ -1,5 +1,7 @@
 # ee-snpaas-cli
 
+![Docker Build and Release](https://github.com/springernature/ee-snpaas-cli/workflows/Docker%20Build%20and%20Release/badge.svg)
+
 Engineering Enablement SNPaaS client.
 
 This repository uses GitHub Actions to build the docker images. To release a new
