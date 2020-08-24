@@ -88,7 +88,6 @@ jobs:
             echo ::set-output name=tag::$(echo v${{needs.build.outputs.version}})
  
       - name: Create Release
-        id: release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
