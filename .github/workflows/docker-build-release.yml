@@ -46,13 +46,14 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v1
         with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: docker.pkg.github.com
-          repository: springernature/ee-snpaas-cli/${{steps.docker.outputs.name}}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
           path: ${{steps.docker.outputs.builddir}}
           dockerfile: ${{steps.docker.outputs.builddir}}/Dockerfile
+          repository: ${{steps.docker.outputs.tag}}
           add_git_labels: true
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          tags: latest,${{steps.docker.outputs.version}}
 
   release:
     name: Create Release
