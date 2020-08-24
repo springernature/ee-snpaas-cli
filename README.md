@@ -2,7 +2,10 @@
 
 Engineering Enablement SNPaaS client.
 
-This repo uses GitHub Actions!
+This repository uses GitHub Actions to build the docker images. To release a new
+version and push to DockerHub, please use an annotated tag: `git tag -a v3.13 -m "new release"`
+and the github actions will do the rest: create a new release and push to DockerHub.
+
 
 ## Install
 ```
