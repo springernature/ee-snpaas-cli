@@ -32,10 +32,11 @@ the proper environment variables), for example: the bastion host.
 
 The `docker` folder have all the sources to create the Docker container.
 Creating and publishing the container is done with the script `publish-dockers-dockerhub.sh`
-which takes all folders (they must have a `Dockerfile`) and creates a Docker image
-with the name of each folder. Once the image is created is automatically pushed
-to dockerhub.com  using *platformengineering* account. You have to be loged in
-with `docker login` in other to publish the Image.
+(also with GitHub actions), and uses an experimental docker feature `squash` to
+create a single layer image. The script takes all folders (they must have a `Dockerfile`)
+and creates a Docker image with the name of each folder. Once the image is created is
+automatically pushed to dockerhub.com  using *platformengineering* account.
+You have to be loged in with `docker login` in other to publish the Image.
 
 * **Images are public available. DO NOT INCLUDE SECRETS THERE**
 * **Images are public available. DO NOT INCLUDE SECRETS THERE**
