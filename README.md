@@ -1,5 +1,9 @@
 # ee-snpaas-cli
 
+Engineering Enablement SNPaaS client.
+
+This repo uses GitHub Actions!
+
 ## Install
 ```
 wget https://raw.githubusercontent.com/springernature/ee-snpaas-cli/master/snpaas -O snpaas && chmod a+x snpaas
@@ -141,40 +145,63 @@ in your environment, then Bosh-cli, Credhub-cli and CF-cli will automatically lo
 
 Then you are ready to manage to manage deployments, with this subcommands and options:
 
-    <subcommand> <folder> [options]
+    [main-options] <subcommand> [subcommand-options] <folder-deployment-name> [other-specific-subcommand-args]
 
-Options:
+Main-options:
+
+    -h --help  Shows this help
+    --noenv    Do not load .envrc files
+
+Subcommand-Options:
 
     -m      Specify a manifest file, instead of generating a random one
     -p      Deployments path. Default is $DEPLOYMENTS_PATH
-    -h      Shows usage help
 
 Subcommands:
 
-    help            Shows usage help
+    help            Shows this usage help
 
-Bosh/deployment subcommands
+  Bosh/deployment subcommands
 
-    interpolate     Create the manifest for an environment
-    create-en       Deploy a Bosh Director
+    interpolate [bosh-int-parameters]
+                    Create the manifest for an environment
+    create-env      Deploy a Bosh Director
     delete-env      Destroy a Bosh Director
-    deploy [-f]     Update or upgrade deployment after applying cloud/runtime configs
-    destroy [-f]    Delete deployment (does not delete cloud/runtime configs)
+    deploy [-f] [bosh-deploy-paramereters] 
+                    Update or upgrade deployment after applying cloud/runtime configs
+    destroy [-f] [bosh-destroy-parameters]
+                    Delete deployment (does not delete cloud/runtime configs)
     cloud-config    Apply cloud-config operations files prefixed with deployment name
     runtime-config  Apply runtime-config operations files prefixed with deployment name
     import-secrets  Set secrets in Credhub from <deployment-folder>/$DEPLOYMENT_CREDS file
     list-secrets    List secrets from Credhub for <deployment-folder>
     export-secrets  Download secrets from Credhub to <deployment-folder>/$DEPLOYMENT_CREDS
+    agent-certificates
+                    Scan Bosh vms of a deployment (if provided as argument, otherwise it
+                    will scan all vms) looking for Bosh Agent certificates, warning those
+                    vms with certificates about to expire. Helps finding VMs which need to
+                    be recreated when rotating Bosh Agent certificates.
 
-CloudFoundry subcommands (Please define CF_ environment variables!)
+  CloudFoundry subcommands (Please define CF_ environment variables!)
 
     cf-top                  top like command for Cloudfoundry
     cf-disk                 Full disk usage report
     cf-mem                  Memory usage report
     cf-users                List users and roles
+    cf-usage                Show usage
+    cf-docker               List docker images
     cf-app-stats <app>      Graphical application stats
     cf-mysql <service>      Connect with a mysql database to perform commands
     cf-route-lookup <route> CF route lookup
+
+  You can type any other (interactive) commands
+
+    bosh
+    cf
+    terraform
+    bash
+    ...
+
 
 # Folder structure:
 
@@ -272,12 +299,11 @@ When deploying a Bosh Director, a state file 'state.json' will be created and
 the DEFAULT cloud-config and runtime-config (name=default!) will be applied AUTOMATICALLY
 if the deployment was successfully done.
 
-# Usage example
+# Usage examples
 
 Given a typical deployment folder called 'app-logging' with this structure:
 
     app-logging
-    ├── cf-logging-boshrelease
     ├── prepare.sh
     ├── runtime-config
     │   ├── dns.yml
@@ -301,10 +327,8 @@ Given a typical deployment folder called 'app-logging' with this structure:
         ├── throttle-param.yml
         └── vars-release-version.yml -> ../cf-logging-boshrelease/manifest/vars-release-version.yml
 
-
 In the above structure 'cf-logging-boshrelease' is a git submodule. The idea is reuse
 resources from there (normally operations files).
-
 
 * To deploy or update the deployment called 'app-logging', execute: 'deploy app-logging'.
   If you do not want to answer 'y/n' question when bosh runs, just use '-f' option:
@@ -361,6 +385,29 @@ Additionally you can directly execute all the following programs installed, just
 by typing then as argument, e.g:
 
 	snpaas credhub find -p '/director-name/'
+
+  BBR:  1.7.2
+  CERTSTRAP:  1.1.1
+  YQ:  3.3.2
+  CF6_PLUGINS:  /opt
+  CF_CLI:  6.45.0
+  VARSTOCREDHUB:  0.1.0
+  CF_RTR:  2.22.0
+  HALFPIPE:  3.34.0
+  FLY:  6.3.0
+  HOME:  /home/snpaas
+  VERSION:  3.12
+  GCLOUD_SDK:  298.0.0
+  USER:  snpaas
+  SPIFF:  1.0.8
+  BOSH_CLI:  6.3.0
+  CREDHUB:  2.7.0
+  DATADIR:  /data
+  TERRAFORM:  0.12.23
+  JQ:  1.5
+  SPRUCE:  1.18.0
+  VAULT:  1.4.2
+
 ```
 
 # Author
