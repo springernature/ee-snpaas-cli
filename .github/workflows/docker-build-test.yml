@@ -3,7 +3,13 @@ name: Docker Build
 on:
   push:
     branches: master
-    tags:
+    tags-ignore:
+      - 'v.*'
+
+env:
+  DOCKER_IMAGE_REPO: platformengineering
+  DOCKER_IMAGE_NAME: snpaas-tools
+  DOCKER_BUILD_DIR: docker/snpaas-tools
 
 jobs:
   docker-build:
@@ -15,10 +21,6 @@ jobs:
 
       - name: Set docker build variables
         id: docker
-        env:
-          DOCKER_IMAGE_REPO: platformengineering
-          DOCKER_IMAGE_NAME: snpaas-tools
-          DOCKER_BUILD_DIR: docker/snpaas-tools
         run: |
             VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
             echo ::set-env name=NAME::$(echo ${DOCKER_IMAGE_NAME})
