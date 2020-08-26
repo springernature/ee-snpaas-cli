@@ -5,8 +5,8 @@ on:
   push:
     tags:
     - '*'
-#    paths:
-#    - 'docker/**'
+    paths:
+    - 'docker/**'
 
 env:
   RELEASE: snpaas-cli
