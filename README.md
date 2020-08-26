@@ -1,12 +1,12 @@
 # ee-snpaas-cli
 
-![Docker Build and Release](https://github.com/springernature/ee-snpaas-cli/workflows/Docker%20Build%20and%20Release/badge.svg)
+![Docker build, release and push to DockerHub](https://github.com/springernature/ee-snpaas-cli/workflows/Docker%20build,%20release%20and%20push%20to%20DockerHub/badge.svg)
 
 Engineering Enablement SNPaaS client.
 
 This repository uses GitHub Actions to build the docker images. To release a new
 version and push to DockerHub, please use an annotated tag: `git tag -a v3.13 -m "new release"`
-and the github actions will do the rest: create a new release and push to DockerHub.
+and push with `git push --tags` and the github actions will do the rest: create a new release and push to DockerHub.
 
 
 ## Install
