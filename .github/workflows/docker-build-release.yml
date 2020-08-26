@@ -69,8 +69,9 @@ jobs:
           RELEASE: snpaas-cli
           TITLE: "SNPaaS client"
         run: |
-            prevtag=$(git describe --abbrev=0 --tags)
-            changes=$(git log --pretty="%h %aI %s (%an)" $prevtag..@ | sed 's/^/- /')
+            tag=$(git describe --abbrev=0 --tags)
+            prevtag=$(git describe --abbrev=0 --tags ${tag}^)
+            changes=$(git log --pretty="%h %aI %s (%an)" ${prevtag}..${tag} | sed 's/^/- /')
             description=$(cat <<EOF
             # $RELEASE version ${{needs.build.outputs.version}}
             
@@ -94,7 +95,8 @@ jobs:
         with:
           tag_name: ${{steps.release.outputs.tag}}
           release_name: ${{steps.release.outputs.name}}
-          body: ${{steps.release.outputs.description}}
+          body: |
+            ${{steps.release.outputs.description}}
           draft: false
           prerelease: false
 
