@@ -7,7 +7,7 @@ FROM debian:10.4-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=3.13
+ARG VERSION=3.14
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
