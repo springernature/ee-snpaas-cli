@@ -211,6 +211,8 @@ then
         app-stats|cf-app-stats)
             if [ -z "${1}" ]
             then
+                echo_log "Application stats requires an extra argument, the app!"
+            else
                 if [ -z "${CF_ORG}" ] || [ -z "${CF_SPACE}" ]
                 then
                     echo_log "Application stats requires a define the CF_ORG and CF_SPACE env vars!"
@@ -218,13 +220,13 @@ then
                     cfexec statistics $1
                     RVALUE=$?
                 fi
-            else
-                echo_log "Application stats requires an extra argument, the app!"
             fi
             ;;
         mysql|cf-mysql)
             if [ -z "${1}" ]
             then
+                echo_log "Mysql client requires an extra argument, the service!"
+            else
                 if [ -z "${CF_ORG}" ] || [ -z "${CF_SPACE}" ]
                 then
                     echo_log "Mysql requires a define the CF_ORG and CF_SPACE env vars!"
@@ -232,17 +234,15 @@ then
                     cfexec mysql $1
                     RVALUE=$?
                 fi
-            else
-                echo_log "Mysql client requires an extra argument, the service!"
             fi
             ;;
         route-lookup|cf-route-lookup)
             if [ -z "${1}" ]
             then
+                echo_log "Searching a route requires an extra argument, the route!"
+            else
                 cfexec lookup-route $1
                 RVALUE=$?
-            else
-                echo_log "Searching a route requires an extra argument, the route!"
             fi
             ;;
     esac
