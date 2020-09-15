@@ -83,13 +83,15 @@ cf_system_check() {
 cfenv() {
     local target=""
     local rvalue=0
+    local org="${CF_ORG:-system}"
+    local space="${CF_SPACE:-system}"
 
     if ! ${CF_CLI} oauth-token > /dev/null 2>&1
     then
         if [ -n "${CF_USER}" ] && [ -n "${CF_PASSWORD}" ] && [ -n "${CF_API}" ]
         then
             ${CF_CLI} logout > /dev/null 2>&1
-            if ! ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "system" -s "system" > /dev/null 2>&1
+            if ! ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "${org}" -s "${space}" > /dev/null 2>&1
             then
                 echo_log "ERROR" "Cannot login in CF with the provided environment variables"
                 return 1
@@ -128,13 +130,15 @@ cfrun() {
 cfexec() {
     local target=""
     local rvalue=0
+    local org="${CF_ORG:-system}"
+    local space="${CF_SPACE:-system}"
 
     if ! ${CF_CLI} oauth-token > /dev/null 2>&1
     then
         if [ -n "${CF_USER}" ] && [ -n "${CF_PASSWORD}" ] && [ -n "${CF_API}" ]
         then
             ${CF_CLI} logout > /dev/null 2>&1
-            if ! ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "system" -s "system" > /dev/null 2>&1
+            if ! ${CF_CLI} login -a "${CF_API}" -u "${CF_USER}" -p "${CF_PASSWORD}" -o "${org}" -s "${space}" > /dev/null 2>&1
             then
                 echo_log "ERROR" "Cannot login in CF with the provided environment variables"
                 return 1
