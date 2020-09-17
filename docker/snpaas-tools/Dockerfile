@@ -7,14 +7,14 @@ FROM debian:10.4-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=3.15
+ARG VERSION=3.16
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
 ARG SNPAAS_BOSH_CLI_VERSION=6.3.0
 # Updating terrafrom needs extra care, because it can become incompatible with
 # current deployments. Ask snpaas team!
-ARG SNPAAS_TERRAFORM_VERSION=0.12.23
+ARG SNPAAS_TERRAFORM_VERSION=0.12.29
 ARG SNPAAS_CF_CLI_VERSION=6.45.0
 ARG SNPAAS_SPRUCE_VERSION=1.18.0
 ARG SNPAAS_JQ_VERSION=1.5
