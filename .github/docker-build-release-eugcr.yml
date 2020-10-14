@@ -1,0 +1,57 @@
+# When a commit is pushed with text matching v*, i.e. v1.0, v20.15.10, creates a new release
+name: Docker build, release and push to DockerHub
+
+on:
+  push
+
+env:
+  RELEASE: snpaas-cli
+  TITLE: "SNPaaS client"
+  DOCKER_IMAGE_REPO: eu.gcr.io/halfpipe-io
+  DOCKER_IMAGE_NAME: snpaas-tools
+  DOCKER_BUILD_DIR: docker/snpaas-tools
+
+jobs:
+  build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.docker.outputs.version }}
+      name: ${{ steps.docker.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set docker build variables
+        id: docker
+        run: |
+            VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
+            echo ::set-env name=NAME::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-env name=REPO::$(echo ${DOCKER_IMAGE_REPO})
+            echo ::set-env name=TAG::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+            echo ::set-env name=BUILDDIR::$(echo ${DOCKER_BUILD_DIR})
+            echo ::set-env name=VERSION::$(echo ${VERSION})
+            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
+            echo ::set-output name=version::$(echo ${VERSION})
+            echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+
+      - name: Build the latest Docker image
+        run: |
+            docker build --file $BUILDDIR/Dockerfile --tag $NAME $BUILDDIR
+
+      - name: Show Output
+        run: |
+            DOCKER_IMAGE=$NAME TTY= ./snpaas
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v1
+        with:
+          username: _json_key
+          password: ${{ secrets.GCR_PRIVATE_KEY }}
+          path: ${{steps.docker.outputs.builddir}}
+          dockerfile: ${{steps.docker.outputs.builddir}}/Dockerfile
+          repository: ${{steps.docker.outputs.tag}}
+          add_git_labels: true
+          push: true
+          tags: latest,${{steps.docker.outputs.version}}
