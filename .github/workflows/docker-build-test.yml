@@ -10,7 +10,7 @@ env:
   DOCKER_IMAGE_REPO: platformengineering
   DOCKER_IMAGE_NAME: snpaas-tools
   DOCKER_BUILD_DIR: docker/snpaas-tools
-  VERSION: $(cat ${DOCKER_BUILD_DIR}/Dockerfile | grep "^ARG VERSION" | cut -d "=" -f2)
+  VERSION: 3.${{ github.run_number }}.0
   TAG: ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME}
 jobs:
   docker-build:
