@@ -28,7 +28,7 @@ jobs:
 
       - name: Output
         run: |
-            DOCKER_IMAGE=$NAME TTY= ./snpaas
+            DOCKER_IMAGE=$DOCKER_IMAGE_NAME TTY= ./snpaas
 
       - name: Push to GitHub Packages
         uses: docker/build-push-action@v1
