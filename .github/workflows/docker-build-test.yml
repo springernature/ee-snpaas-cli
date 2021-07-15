@@ -11,7 +11,7 @@ env:
   DOCKER_IMAGE_NAME: snpaas-tools
   DOCKER_BUILD_DIR: docker/snpaas-tools
   VERSION: 3.${{ github.run_number }}.0
-  TAG: ${{ env.DOCKER_IMAGE_REPO }}/${{ env.DOCKER_IMAGE_NAME }}
+  TAG: platformengineering/snpaas-tools
 
 jobs:
   docker-build:
