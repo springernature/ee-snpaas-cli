@@ -26,16 +26,16 @@ jobs:
         run: |
             echo $DOCKER_IMAGE_REPO
             echo $VERSION
-            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME})
+            echo ::set-output tagname=name::$(echo ${DOCKER_IMAGE_NAME})
             echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
-            echo ::set-output name=version::$(echo ${VERSION})
-            echo ::set-output name=tag::$(echo $TAG)
+            echo ::set-output name=imageversion::$(echo ${VERSION})
+            echo ::set-output name=tagtag::$(echo $TAG)
 
 
       - name: Build the latest Docker image
         run: |
-            docker build --file $BUILDDIR/Dockerfile --tag $NAME $BUILDDIR
-            docker tag $NAME $TAG:$VERSION
+            docker build --file $BUILDDIR/Dockerfile --tag $TAGNAME $BUILDDIR
+            docker tag $TAGNAME $TAGTAG:$IMAGEVERSION
 
       - name: Output
         run: |
