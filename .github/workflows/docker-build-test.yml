@@ -10,7 +10,7 @@ env:
   DOCKER_IMAGE_REPO: platformengineering
   DOCKER_IMAGE_NAME: snpaas-tools
   DOCKER_BUILD_DIR: docker/snpaas-tools
-  VERSION: $(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
+  VERSION: $(cat ${DOCKER_BUILD_DIR}/Dockerfile | sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p')
   TAG: ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME}
 jobs:
   docker-build:
@@ -23,7 +23,7 @@ jobs:
       - name: Set docker build variables
         id: docker
         run: |
-            echo ${VERSION}
+            echo $VERSION
             echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME}
             echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
             echo ::set-output name=version::$(echo ${VERSION})
