@@ -21,21 +21,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set docker build variables
-        id: docker
-        run: |
-            echo $DOCKER_IMAGE_REPO
-            echo $VERSION
-            echo ::set-output name=tagname::$(echo ${DOCKER_IMAGE_NAME})
-            echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
-            echo ::set-output name=imageversion::$(echo ${VERSION})
-            echo ::set-output name=tagtag::$(echo $TAG)
-
-
       - name: Build the latest Docker image
         run: |
-            docker build --file $BUILDDIR/Dockerfile --tag $TAGNAME $BUILDDIR
-            docker tag $TAGNAME $TAGTAG:$IMAGEVERSION
+            docker build --file $DOCKER_BUILD_DIR/Dockerfile --tag $TAG $DOCKER_BUILD_DIR
+            docker tag $DOCKER_IMAGE_NAME $TAG:$VERSION
 
       - name: Output
         run: |
