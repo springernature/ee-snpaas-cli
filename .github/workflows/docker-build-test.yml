@@ -23,10 +23,10 @@ jobs:
       - name: Set docker build variables
         id: docker
         run: |
-            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME}
-            echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
-            echo ::set-output name=version::$(echo ${VERSION})
-            echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+            echo ::set-output name=name::$(echo ${env.DOCKER_IMAGE_NAME}
+            echo ::set-output name=builddir::$(echo ${env.DOCKER_BUILD_DIR})
+            echo ::set-output name=version::$(echo ${env.VERSION})
+            echo ::set-output name=tag::$(echo ${env.DOCKER_IMAGE_REPO}/${env.DOCKER_IMAGE_NAME})
 
 
       - name: Build the latest Docker image
