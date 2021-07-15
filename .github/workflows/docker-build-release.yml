@@ -30,11 +30,11 @@ jobs:
         id: docker
         run: |
             VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
-            echo ::set-env name=NAME::$(echo ${DOCKER_IMAGE_NAME})
-            echo ::set-env name=REPO::$(echo ${DOCKER_IMAGE_REPO})
-            echo ::set-env name=TAG::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
-            echo ::set-env name=BUILDDIR::$(echo ${DOCKER_BUILD_DIR})
-            echo ::set-env name=VERSION::$(echo ${VERSION})
+            echo 'NAME'=${DOCKER_IMAGE_NAME}) >> $GITHUB_ENV
+            echo 'REPO'=${DOCKER_IMAGE_REPO} >> $GITHUB_ENV
+            echo 'TAG'=${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME} >> $GITHUB_ENV
+            echo 'BUILDDIR'=${DOCKER_BUILD_DIR} >> $GITHUB_ENV
+            echo 'VERSION'=${VERSION} >> $GITHUB_ENV
             echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME})
             echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
             echo ::set-output name=version::$(echo ${VERSION})
