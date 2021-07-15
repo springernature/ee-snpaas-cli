@@ -22,7 +22,7 @@ jobs:
       - name: Set docker build variables
         id: docker
         run: |
-            VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
+
             echo 'NAME'=${DOCKER_IMAGE_NAME}) >> $GITHUB_ENV
             echo 'REPO'=${DOCKER_IMAGE_REPO} >> $GITHUB_ENV
             echo 'TAG'=${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME} >> $GITHUB_ENV
@@ -32,6 +32,8 @@ jobs:
             echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
             echo ::set-output name=version::$(echo ${VERSION})
             echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
+        env:
+          VERSION=$(sed -ne 's/^ARG.* VERSION=\(.*\)/\1/p' ${DOCKER_BUILD_DIR}/Dockerfile)
 
       - name: Build the latest Docker image
         run: |
