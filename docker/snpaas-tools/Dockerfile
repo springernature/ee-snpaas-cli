@@ -14,7 +14,7 @@ ARG VERSION=3.16
 ARG SNPAAS_BOSH_CLI_VERSION=6.3.0
 # Updating terrafrom needs extra care, because it can become incompatible with
 # current deployments. Ask snpaas team!
-ARG SNPAAS_TERRAFORM_VERSION=0.12.29
+ARG SNPAAS_TERRAFORM_VERSION=0.13.7
 ARG SNPAAS_CF_CLI_VERSION=6.45.0
 ARG SNPAAS_SPRUCE_VERSION=1.18.0
 ARG SNPAAS_JQ_VERSION=1.5
