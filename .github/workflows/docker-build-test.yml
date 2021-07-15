@@ -26,7 +26,7 @@ jobs:
         run: |
             echo $DOCKER_IMAGE_REPO
             echo $VERSION
-            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME}
+            echo ::set-output name=name::$(echo ${DOCKER_IMAGE_NAME})
             echo ::set-output name=builddir::$(echo ${DOCKER_BUILD_DIR})
             echo ::set-output name=version::$(echo ${VERSION})
             echo ::set-output name=tag::$(echo ${DOCKER_IMAGE_REPO}/${DOCKER_IMAGE_NAME})
