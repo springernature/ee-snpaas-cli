@@ -38,7 +38,7 @@ jobs:
       - name: Push to GitHub Packages
         uses: docker/build-push-action@v2
         with:
-          context: docker/snpaas-tools
+          context: ${{ DOCKER_BUILD_DIR }}
           pull: false
           push: false
           cache-from: type=registry,ref=${{ DOCKER_IMAGE_REPO }}/${{ DOCKER_IMAGE_NAME }}:latest
