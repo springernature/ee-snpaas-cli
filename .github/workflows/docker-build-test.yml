@@ -38,11 +38,11 @@ jobs:
       - name: Push to GitHub Packages
         uses: docker/build-push-action@v2
         with:
-          context: ${{ DOCKER_BUILD_DIR }}
+          context: ${{ env.DOCKER_BUILD_DIR }}
           pull: false
           push: false
-          cache-from: type=registry,ref=${{ DOCKER_IMAGE_REPO }}/${{ DOCKER_IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           cache-to: type=inline
-          tags: ${{ DOCKER_IMAGE_REPO }}/${{ DOCKER_IMAGE_NAME }}:latest
+          tags: ${{ env.DOCKER_IMAGE_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:latest
 
 
