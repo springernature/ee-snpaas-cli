@@ -43,7 +43,7 @@ jobs:
       - name: Push to GitHub Packages
         uses: docker/build-push-action@v2
         with:
-          context: ${{steps.docker.outputs.builddir}}
+          context: docker/snpaas-tools
           push: true
           tags: platformengineering/snpaas-tools:latest
 
