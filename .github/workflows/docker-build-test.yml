@@ -41,8 +41,8 @@ jobs:
           context: docker/snpaas-tools
           pull: false
           push: false
-          cache-from: type=registry,ref=platformengineering/snpaas-tools:latest
+          cache-from: type=registry,ref=${{ DOCKER_IMAGE_REPO }}/${{ DOCKER_IMAGE_NAME }}:latest
           cache-to: type=inline
-          tags: platformengineering/snpaas-tools:latest
+          tags: ${{ DOCKER_IMAGE_REPO }}/${{ DOCKER_IMAGE_NAME }}:latest
 
 
