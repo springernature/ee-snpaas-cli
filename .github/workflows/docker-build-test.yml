@@ -36,7 +36,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
-          repository: springernature/ee-snpaas-cli/${{steps.docker.outputs.name}}
+          repository: springernature/ee-snpaas-cli
           path: ${{steps.docker.outputs.builddir}}
           dockerfile: ${{steps.docker.outputs.builddir}}/Dockerfile
           add_git_labels: true
