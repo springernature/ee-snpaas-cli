@@ -39,8 +39,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/snpaas-tools
-          pull: true
-          push: true
+          pull: false
+          push: false
           cache-from: type=registry,ref=platformengineering/snpaas-tools:latest
           cache-to: type=inline
           tags: platformengineering/snpaas-tools:latest
