@@ -23,7 +23,7 @@ jobs:
 
       - name: Build the latest Docker image
         run: |
-            docker build --file $DOCKER_BUILD_DIR/Dockerfile --tag $TAG $DOCKER_BUILD_DIR
+            docker build --file $DOCKER_BUILD_DIR/Dockerfile --tag $DOCKER_IMAGE_NAME $DOCKER_BUILD_DIR
             docker tag $DOCKER_IMAGE_NAME $TAG:$VERSION
 
       - name: Output
