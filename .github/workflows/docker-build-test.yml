@@ -45,6 +45,6 @@ jobs:
         with:
           context: ${{steps.docker.outputs.builddir}}
           push: true
-          tags: ${{steps.docker.outputs.tag}}:latest
+          tags: platformengineering/snpaas-tools:latest
 
 
