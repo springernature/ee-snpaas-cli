@@ -50,7 +50,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: _json_key
-          password:  ${{ secrets.GCR_PRIVATE_KEY }}
+          password: ${{ secrets.GCR_PRIVATE_KEY }}
 
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
