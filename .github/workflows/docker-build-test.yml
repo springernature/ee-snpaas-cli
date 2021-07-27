@@ -21,13 +21,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build the latest Docker image
-        run: |
-            docker build --file $DOCKER_BUILD_DIR/Dockerfile --tag $DOCKER_IMAGE_NAME $DOCKER_BUILD_DIR
-            docker tag $DOCKER_IMAGE_NAME $TAG:$VERSION
-      - name: Output
-        run: |
-            DOCKER_IMAGE=$DOCKER_IMAGE_NAME TTY= ./snpaas
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -44,7 +37,10 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/snpaas-tools
+          pull: true
           push: true
+          cache-from: type=registry,ref=platformengineering/snpaas-tools:latest
+          cache-to: type=inline
           tags: platformengineering/snpaas-tools:latest
 
 
