@@ -1,4 +1,4 @@
-FROM debian:10.4-slim
+FROM debian:10.11-slim
 
 # docker build . -t snpaas-tools
 # docker run -it -v $(pwd)/data snpaas-tools help
@@ -7,7 +7,7 @@ FROM debian:10.4-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=3.16
+ARG VERSION=3.17
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
@@ -28,7 +28,7 @@ ARG SNPAAS_VARSTOCREDHUB_VERSION=0.1.0
 ARG SNPAAS_CF_RTR_VERSION=2.22.0
 ARG SNPAAS_HALFPIPE_VERSION=3.34.0
 ARG SNPAAS_YQ_VERSION=3.3.2
-ARG SNPAAS_VAULT_VERSION=1.4.2
+ARG SNPAAS_VAULT_VERSION=1.8.4
 
 ARG USER=snpaas
 ARG HOME=/home/snpaas
@@ -121,7 +121,6 @@ RUN set -xe                                                                 && \
         libxslt1-dev \
         libxml2-dev \
         libssl-dev \
-        libreadline7 \
         libreadline-dev \
         libyaml-dev \
         libsqlite3-dev \
