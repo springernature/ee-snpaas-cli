@@ -1,0 +1,58 @@
+name: Build docker and push to GCR (Github Packages and Google)
+
+on:
+  push:
+    branches:
+      - 'master'
+
+env:
+  RELEASE: snpaas-cli
+  TITLE: "SNPaaS client"
+  DOCKER_IMAGE_REPO: platformengineering
+  DOCKER_IMAGE_NAME: snpaas-tools
+  DOCKER_BUILD_DIR: docker/snpaas-tools
+
+jobs:
+  push_to_registry:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the git repository
+        uses: actions/checkout@v2
+
+      - name: Get metadata for Docker image
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+            eu.gcr.io/halfpipe-io/engineering-enablement/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+
+      - name: Log in to the GitHub Container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Google Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_PRIVATE_KEY }}
+
+      - name: Build and push to Github Packages and Google Container Registry if is not PR
+        uses: docker/build-push-action@v2
+        with:
+          context: ${{ env.DOCKER_BUILD_DIR }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
