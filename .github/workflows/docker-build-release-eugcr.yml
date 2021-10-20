@@ -1,5 +1,5 @@
 # When a commit is pushed with text matching v*, i.e. v1.0, v20.15.10, creates a new release
-name: Docker build, release and push to DockerHub
+name: Docker release to GCR
 
 on:
   push
