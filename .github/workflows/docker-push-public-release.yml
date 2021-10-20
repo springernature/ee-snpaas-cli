@@ -42,7 +42,7 @@ jobs:
           push: ${{ github.event_name == 'release' }}
           context: ${{ env.DOCKER_BUILD_DIR }}
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
