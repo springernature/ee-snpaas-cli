@@ -1,6 +1,7 @@
 # ee-snpaas-cli
 
-![Docker build, release and push to DockerHub](https://github.com/springernature/ee-snpaas-cli/workflows/Docker%20build,%20release%20and%20push%20to%20DockerHub/badge.svg)
+[![Build docker and push to GCR (Github Packages and Google)](https://github.com/springernature/ee-snpaas-cli/actions/workflows/docker-build-gcr.yml/badge.svg)](https://github.com/springernature/ee-snpaas-cli/actions/workflows/docker-build-gcr.yml)
+[![Build docker and publish to DockerHub if released](https://github.com/springernature/ee-snpaas-cli/actions/workflows/docker-push-public-release.yml/badge.svg)](https://github.com/springernature/ee-snpaas-cli/actions/workflows/docker-push-public-release.yml)
 
 Engineering Enablement SNPaaS client.
 
