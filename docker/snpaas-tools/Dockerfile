@@ -1,4 +1,4 @@
-FROM debian:10.11-slim
+FROM debian:stable-slim 
 
 # docker build . -t snpaas-tools
 # docker run -it -v $(pwd)/data snpaas-tools help
@@ -7,28 +7,28 @@ FROM debian:10.11-slim
 
 # Version of this image
 # ARG VERSION=1.2
-ARG VERSION=3.18
+ARG VERSION=3.19
 
 # Versions, please prefix them with SNPAAS_ and suffix with _VERSION
 # (see run.sh script)
-ARG SNPAAS_BOSH_CLI_VERSION=6.4.7
+ARG SNPAAS_BOSH_CLI_VERSION=7.0.1
 # Updating terrafrom needs extra care, because it can become incompatible with
 # current deployments. Ask snpaas team!
 ARG SNPAAS_TERRAFORM_VERSION=0.14.4
-ARG SNPAAS_CF_CLI_VERSION=6.45.0
-ARG SNPAAS_SPRUCE_VERSION=1.18.0
-ARG SNPAAS_JQ_VERSION=1.5
-ARG SNPAAS_CREDHUB_VERSION=2.9.1
-ARG SNPAAS_FLY_VERSION=6.3.0
-ARG SNPAAS_BBR_VERSION=1.7.2
-ARG SNPAAS_CERTSTRAP_VERSION=1.1.1
+ARG SNPAAS_CF_CLI_VERSION=8.5.0
+ARG SNPAAS_SPRUCE_VERSION=1.29.0
+ARG SNPAAS_JQ_VERSION=1.6
+ARG SNPAAS_CREDHUB_VERSION=2.9.5
+ARG SNPAAS_FLY_VERSION=6.7.9
+ARG SNPAAS_BBR_VERSION=1.9.38
+ARG SNPAAS_CERTSTRAP_VERSION=1.3.0
 ARG SNPAAS_SPIFF_VERSION=1.0.8
-ARG SNPAAS_GCLOUD_SDK_VERSION=298.0.0
+ARG SNPAAS_GCLOUD_SDK_VERSION=406.0.0
 ARG SNPAAS_VARSTOCREDHUB_VERSION=0.1.0
 ARG SNPAAS_CF_RTR_VERSION=2.22.0
-ARG SNPAAS_HALFPIPE_VERSION=3.34.0
-ARG SNPAAS_YQ_VERSION=3.3.2
-ARG SNPAAS_VAULT_VERSION=1.8.4
+ARG SNPAAS_HALFPIPE_VERSION=3.103.0
+ARG SNPAAS_YQ_VERSION=4.28.1
+ARG SNPAAS_VAULT_VERSION=1.12.0
 
 ARG USER=snpaas
 ARG HOME=/home/snpaas
@@ -135,18 +135,18 @@ RUN set -xe                                                                 && \
 
 RUN set -xe                                                                 && \
     mkdir -p /opt                                                           && \
-    wget "https://cli.run.pivotal.io/stable?release=linux64-binary&version=${SNPAAS_CF_CLI_VERSION}" -nv -O - | tar -zx -C /usr/local/bin                                                                                             && \
+    wget "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=${SNPAAS_CF_CLI_VERSION}&source=github-rel" -nv -O - | tar -zx -C /usr/local/bin                                                                    && \
     wget "https://github.com/geofffranks/spruce/releases/download/v${SNPAAS_SPRUCE_VERSION}/spruce-linux-amd64" -nv -O /usr/local/bin/spruce                                                                                          && \
     wget "https://github.com/stedolan/jq/releases/download/jq-${SNPAAS_JQ_VERSION}/jq-linux64" -nv -O /usr/local/bin/jq                                                                                                               && \
-    wget "https://s3.amazonaws.com/bosh-cli-artifacts/bosh-cli-${SNPAAS_BOSH_CLI_VERSION}-linux-amd64" -nv -O /usr/local/bin/bosh                                                                                                     && \
-    wget "https://github.com/cloudfoundry-incubator/credhub-cli/releases/download/${SNPAAS_CREDHUB_VERSION}/credhub-linux-${SNPAAS_CREDHUB_VERSION}.tgz" -nv -O - | tar -xz -C /usr/local/bin                                         && \
+    wget "https://github.com/cloudfoundry/bosh-cli/releases/download/${SNPAAS_BOSH_CLI_VERSION}/bosh-cli-${SNPAAS_BOSH_CLI_VERSION}-linux-amd64" -nv -O /usr/local/bin/bosh                                                           && \
+    wget "https://github.com/cloudfoundry/credhub-cli/releases/download/${SNPAAS_CREDHUB_VERSION}/credhub-linux-${SNPAAS_CREDHUB_VERSION}.tgz" -nv -O - | tar -xz -C /usr/local/bin                                                   && \
     wget "https://github.com/concourse/concourse/releases/download/v${SNPAAS_FLY_VERSION}/fly-${SNPAAS_FLY_VERSION}-linux-amd64.tgz" -nv -O - | tar -xz -C /usr/local/bin                                                             && \
     wget "https://github.com/square/certstrap/releases/download/v${SNPAAS_CERTSTRAP_VERSION}/certstrap-v${SNPAAS_CERTSTRAP_VERSION}-linux-amd64" -nv -O /usr/local/bin/certstrap                                                      && \
-    wget "https://github.com/cloudfoundry-incubator/bosh-backup-and-restore/releases/download/v${SNPAAS_BBR_VERSION}/bbr-${SNPAAS_BBR_VERSION}.tar" -nv -O - | tar -x -C /tmp releases/bbr && mv /tmp/releases/bbr /usr/local/bin/bbr && \
+    wget "https://github.com/cloudfoundry/bosh-backup-and-restore/releases/download/v${SNPAAS_BBR_VERSION}/bbr-${SNPAAS_BBR_VERSION}.tar" -nv -O - | tar -x -C /tmp releases/bbr && mv /tmp/releases/bbr /usr/local/bin/bbr && \
     wget "https://releases.hashicorp.com/terraform/${SNPAAS_TERRAFORM_VERSION}/terraform_${SNPAAS_TERRAFORM_VERSION}_linux_amd64.zip" -nv -O /tmp/terraform.zip && unzip -q /tmp/terraform.zip -d /usr/local/bin                      && \
     wget "https://github.com/cloudfoundry-incubator/spiff/releases/download/v${SNPAAS_SPIFF_VERSION}/spiff_linux_amd64.zip" -nv -O /tmp/spiff.zip && unzip -q /tmp/spiff.zip -d /usr/local/bin                                        && \
     wget "https://github.com/SpringerPE/vars-to-credhub/releases/download/v${SNPAAS_VARSTOCREDHUB_VERSION}/vars-to-credhub-linux-amd64" -nv -O /usr/local/bin/vars-to-credhub                                                         && \
-    wget "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${SNPAAS_GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz" -nv -O - | tar -zx -C /opt                                                                    && \
+    wget "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${SNPAAS_GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz" -nv -O - | tar -zx -C /opt                                                                    && \  
     wget "https://github.com/mikefarah/yq/releases/download/${SNPAAS_YQ_VERSION}/yq_linux_amd64" -nv -O /usr/local/bin/yq                                                                                                             && \
     wget "https://github.com/springernature/halfpipe/releases/download/${SNPAAS_HALFPIPE_VERSION}/halfpipe_linux_${SNPAAS_HALFPIPE_VERSION}" -nv -O /usr/local/bin/halfpipe                                                           && \
     wget "https://github.com/cloudfoundry/routing-api-cli/releases/download/${SNPAAS_CF_RTR_VERSION}/rtr-linux-amd64.tgz"  -nv -O - | tar -zx -C /tmp && mv /tmp/rtr-linux-amd64 /usr/local/bin/rtr                                   && \
