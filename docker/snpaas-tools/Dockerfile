@@ -37,6 +37,7 @@ ARG GUID=1000
 ARG TIMEZONE=Europe/Amsterdam
 ARG DATADIR=/data
 ARG OPTDIR=/opt
+# ARG SNPAAS_CA_PATH
 
 LABEL org.label-schema.docker.schema-version="1.0"
 LABEL org.label-schema.vendor="Springer Nature Engineering Enablement"
@@ -73,6 +74,8 @@ ENV SNPAAS_CF_RTR_VERSION=$SNPAAS_CF_RTR_VERSION
 ENV SNPAAS_HALFPIPE_VERSION=$SNPAAS_HALFPIPE_VERSION
 ENV SNPAAS_YQ_VERSION=$SNPAAS_YQ_VERSION
 ENV SNPAAS_VAULT_VERSION=$SNPAAS_VAULT_VERSION
+
+
 
 RUN set -xe                                                                 && \
     groupadd --gid "${GUID}" "${USER}"                                      && \
@@ -192,6 +195,13 @@ RUN set -xe                                                                 && \
 COPY Readme.md /
 COPY resources/*.sh /usr/local/bin/
 VOLUME "${DATADIR}"
+
+# Add additional root certificate
+# RUN if [ -z "$SNPAAS_CA_PATH" ] ; then echo No Additional CA Cert provided ; else 
+RUN mkdir -p /usr/local/share/ca-certificates/extra 
+COPY certificates/* /usr/local/share/ca-certificates/extra/
+RUN update-ca-certificates
+
 
 # Main command
 ENTRYPOINT ["/bin/bash", "/run.sh"]
