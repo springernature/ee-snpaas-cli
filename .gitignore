@@ -65,3 +65,7 @@ target/
 # virtualenv
 venv/
 ENV/
+
+# Don't push CA certs but empty folder
+dockerdocker/snpaas-tools/*
+!dockerdocker/snpaas-tools/.gitkeep
