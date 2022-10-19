@@ -69,6 +69,9 @@ ENV/
 # IDEA
 .github/workflows/.idea/
 
+# Mac Stuff
+.DS_Store
+
 # Don't push CA certs but empty folder
 docker/snpaas-tools/certificates/*
 !docker/snpaas-tools/certificates/.gitkeep
