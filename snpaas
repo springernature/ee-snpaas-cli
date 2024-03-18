@@ -19,7 +19,7 @@
 # all resources bosh-cli uses/downloads will be gone with the container.
 #
 # Docker image with all the binaries
-DOCKER_IMAGE="${DOCKER_IMAGE:-platformengineering/snpaas-tools:latest}"
+DOCKER_IMAGE="${DOCKER_IMAGE:-eu.gcr.io/halfpipe-io/engineering-enablement/snpaas-tools:master}"
 DOCKER_CMD_ARGS="--rm"
 PREPARE_SCRIPT="prepare.sh"
 
