@@ -81,7 +81,7 @@ then
   esac
 fi
 
-if [ -n "${SSH_AUTH_SOCK}" ]
+if [ -n "${SSH_AUTH_SOCK}" ] && [[ "$(uname -s)" == Linux* ]]
 then
   # SSH agent socket in order to get working with github
   # THIS ONLY WORKS ON LINUX
